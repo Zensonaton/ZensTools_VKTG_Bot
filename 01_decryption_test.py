@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import unittest
+import pytest
 
 from Parser import decrypt_plain
 import pgpy
