@@ -15,4 +15,4 @@ def test_decrypt():
 		)
 		assert json_loaded["Success"]
 	except Exception as error:
-		assert False, f"Ошибка при декодировании тестового сообщения: {error}"
+		assert False
