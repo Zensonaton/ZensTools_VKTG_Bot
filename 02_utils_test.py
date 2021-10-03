@@ -11,7 +11,3 @@ def test_indexjson_url_checker():
 	assert is_a_valid_index_url("https://onlinemektep.net/upload/online_mektep/lesson/18772e600545bf72a07825480de14e27/index.json") # Should be True
 	assert not is_a_valid_index_url("https://onlinemektep.net/upload/online_mektep/lesson/THIS_SHOULD_BE_FALSE!/index.json")        # Should be False
 	assert not is_a_valid_index_url("https://onlinemektep.net/upload/online_mektep/lesson/THIS_SHOULD_BE_FALSE!/index.json.")       # Should be False
-    
-
-def test_this_change_will_break_everything():
-	assert False
