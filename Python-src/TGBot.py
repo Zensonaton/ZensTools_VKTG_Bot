@@ -218,18 +218,25 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 			# Статистика:
 			bot_data["LessonsAnalyzed"] += 1
 
+		decoded_url = bot_data["DecodedLessonURLs"][lesson["scheduleId"]]
+		broken_url = "Something went wrong :-(" in decoded_url
+
+		if broken_url:
+			decoded_url = "www.error.com"
+
+
 		if smaller_version:
 			# Мобильная версия
 			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b> {lesson_name_full}: {score}%"
 
 			keys.append(InlineKeyboardButton(
-				f"[{index + 1}] {lesson_name}", url=bot_data["DecodedLessonURLs"][lesson["scheduleId"]]))
+				f"[{index + 1}] {'<ОШИБКА>' if broken_url else lesson_name}", url=decoded_url))
 		else:
 			# PC-Версия
 			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b>: {lesson['subject']['label']}, <i>«{shorten(lesson['theme']['label'], 40, placeholder = '...')}»</i>: {score}%"
 			
 			keys.append(InlineKeyboardButton(
-				f"{lesson['subject']['label']}, «{lesson['theme']['label']}»", url=bot_data["DecodedLessonURLs"][lesson["scheduleId"]]))
+				f"{'<ОШИБКА>' if broken_url else lesson['subject']['label']}, «{'<ОШИБКА>' if broken_url else lesson['theme']['label']}»", url=decoded_url))
 
 	lessons_list += "."
 
