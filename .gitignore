@@ -1,6 +1,8 @@
 .env
-UserData/*
+Data/*
 Temp*/
+Decoded-Files/*
+Logs/*
 
 
 # Byte-compiled / optimized / DLL files
