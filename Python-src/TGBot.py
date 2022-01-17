@@ -222,21 +222,34 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 		broken_url = "Something went wrong :-(" in decoded_url
 
 		if broken_url:
+			# На всякий.
 			decoded_url = "www.error.com"
-
 
 		if smaller_version:
 			# Мобильная версия
 			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b> {lesson_name_full}: {score}%"
 
-			keys.append(InlineKeyboardButton(
-				f"[{index + 1}] {'<ОШИБКА>' if broken_url else lesson_name}", url=decoded_url))
+			if not broken_url:
+				keys.append(InlineKeyboardButton(
+					f"[{index + 1}] {lesson_name}", url=decoded_url))
 		else:
 			# PC-Версия
 			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b>: {lesson['subject']['label']}, <i>«{shorten(lesson['theme']['label'], 40, placeholder = '...')}»</i>: {score}%"
 			
+			if not broken_url:
+				keys.append(InlineKeyboardButton(
+					f"{lesson['subject']['label']}, «{lesson['theme']['label']}»", url=decoded_url))
+
+		if broken_url:
 			keys.append(InlineKeyboardButton(
-				f"{'<ОШИБКА>' if broken_url else lesson['subject']['label']}, «{'<ОШИБКА>' if broken_url else lesson['theme']['label']}»", url=decoded_url))
+                f"[{index + 1}] ОШИБКА", callback_data="error-button"))
+
+			# Удаляем сломанный URL:
+			del bot_data["DecodedLessonURLs"][lesson["scheduleId"]]
+
+			
+
+		
 
 	lessons_list += "."
 
@@ -257,6 +270,11 @@ async def global_error_handler(update: Update, error: Exception):
 
 	await update.message.answer(f"Упс, у бота произошла ошибка. Текст ошибки:\n\n<code>{traceback.format_exc()}</code>")
 	return True
+
+
+@dp.callback_query_handler(lambda call: call.data == "error-button")
+async def vote_down_cb_handler(query: types.CallbackQuery):
+    await bot.answer_callback_query(query.id, text="⚠️ Что-то пошло не так, и этот урок сломался.\n\nℹ️ Пропиши команду /schedule снова, что бы попытаться исправить эту ошибку.", show_alert=True)
 
 
 
