@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import asyncio
 import datetime
 import sys
 from    aiogram             import 	Bot, types, md
@@ -171,7 +172,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 			lessons_list += ";\n"
 
 		score = lesson['lesson']['score'] or 0
-		score = round((score / 9) * 100)
+		score = round((score / 10) * 100)
 
 		lesson_name = smaller_lesson_names.get(
 			lesson['subject']['label'], lesson['subject']['label'])
@@ -185,8 +186,31 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 			lesson_info = await BL.get_lesson_info(lesson["scheduleId"], user_data["Token"])
 			# Получаем index.json
 			lesson_downloaded = await BL.get_index_json(lesson_info["data"]["lessonId"])
-			# Декодируем URL
-			lesson_decoded_url = await BL.decode_url(lesson_downloaded, lesson["scheduleId"])
+			retries = 3
+			lesson_decoded_url = None
+			while retries > 0:
+				try:
+					# Декодируем URL
+					lesson_decoded_url = await BL.decode_url(lesson_downloaded, lesson["scheduleId"])
+
+					# Чекаем, нету ли ошибки:
+					if "Something went wrong :-(" in lesson_decoded_url:
+						raise Exception("Ошибка при получении урока, вероятнее всего сервер дешифровки ответов упал.")
+					
+					break
+
+				except:
+					await msg.answer(f"<i>Что-то пошло не так, и я не сумел связаться с сервером дешифровки ответов. Я попробую ещё {retries} раз, но с большей задержкой.</i>")
+					await asyncio.sleep(5)
+				finally:
+					retries -= 1
+
+			if lesson_decoded_url is None:
+				await msg.answer("Сайт с ответами упал. Попробуйте получить расписание позже.")
+
+				return
+
+					
 
 			# Сохраняем URL
 			bot_data["DecodedLessonURLs"][lesson["scheduleId"]] = lesson_decoded_url
