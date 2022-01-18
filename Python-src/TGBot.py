@@ -136,17 +136,6 @@ async def sched_handler(msg: types.Message):
 		f"📆 Расписание на сегодня, <code>{today}</code>. У тебя сегодня {int_to_emojis(len(todays_schedule['schedule']))} уроков, из которых:\n{sched_str}\n<code>{'ㅤ' * 30}</code>\nКликни на кнопку ниже для открытия сайта с дешифрованным уроком! 😜",
 		reply_markup=sched_keyboard
 	)
-	
-# @dp.message_handler(content_types = types.ContentType.DOCUMENT)
-# async def process_document(msg: types.Message):
-# 	if msg.document.mime_type == "application/json":
-# 		await msg.reply("JSON")
-# 		return
-# 	elif msg.document.mime_type == "text/plain":
-# 		await msg.reply("PLAIN")
-# 		return
-		
-# 	await msg.reply("⚠ Отправленный тобою файл не является `\.JSON`\-файлом\. Вероятнее всего, ты отправил не тот файл\.")
 
 async def generate_schedule_string(msg: types.Message, full_schedule: dict, smaller_version: bool) -> str:
 	keys = []
