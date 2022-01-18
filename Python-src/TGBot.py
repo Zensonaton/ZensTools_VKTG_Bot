@@ -100,6 +100,7 @@ async def login_handler(msg: types.Message):
 
 	await msg.answer(f"Прекрасно, пароль и логин верны, и у меня получилось подключиться к твоему аккаунту, <i>{login_result['FirstName']}!</i> 👍\n\nТеперь ты можешь получить доступ к расписанию: /schedule")
 
+# TODO: Contact command
 
 @dp.message_handler(commands = ["sched", "schedule", "расписание", "задания", "список", "уроки"])
 async def sched_handler(msg: types.Message):
@@ -111,8 +112,17 @@ async def sched_handler(msg: types.Message):
 		return
 
 	today = today_date()
-	full_schedule = await BL.get_schedule(
-		user_data, user_data["Token"])
+	try:
+		full_schedule = await BL.get_schedule(
+			user_data, user_data["Token"])
+	except:
+		await msg.answer_sticker("CAACAgEAAxkBAAEDEzthZ-PBNrIKxd1YItQmcTItwNi1VwACcIMAAq8ZYgfAbLJhK3qxuiEE")
+
+		await msg.answer("<i>Упс</i>, что-то пошло не так, и система авторизации сломалась 😨\n\nПопробуй авторизоваться снова, ведь я специально де-авторизовал тебя из системы. Это можно сделать, введя команду <code>/login логин пароль</code>.\nЕсли проблема продолжается, то сообщи об этом создателю бота, прописав команду /feedback.")
+		del user_data["Token"]
+		save_data(user_data, f"User-{msg.from_user.id}.json")
+
+		return
 
 	# Проверяем, есть ли сегодняшняя дата в расписании.
 	if today not in full_schedule["days"]:

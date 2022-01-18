@@ -12,6 +12,11 @@ class TokenHasBeenExpired(Exception):
 
 	pass
 
+class TokenIsBroken(Exception):
+	"""Вызывается, если токену пизда."""
+	
+	pass
+
 async def get_index_json(lesson_id: int or str) -> str:
 	"""Загружает `index.json` файл через данный этой функции `lesson_id`.
 
@@ -159,8 +164,11 @@ async def get_schedule(user_data, token: str):
 			"Authorization": f"Bearer {token}",
 			"X-Localization": "ru"
 		}) as response:
-			if response.status == 426:
+			if response.status == 426 or response.content_type == "text/html":
 				raise TokenHasBeenExpired("Токен истёк.")
+			elif response.status == 500:
+				raise TokenIsBroken("Токен повреждён, полный текст ошибки: " + await response.text())
+
 
 			response_json = await response.json()
 
