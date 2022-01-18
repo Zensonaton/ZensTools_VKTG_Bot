@@ -48,6 +48,9 @@ logger.addHandler(fileHandler)
 
 UPTIME = unix_time()
 
+# TODO: /logout command
+# TODO: Timezone for /stats
+
 @dp.message_handler(commands = ["start", "start", "старт",])
 async def message_handler(msg: types.Message):
 	#У бота есть <a href='https://github.com/Zensonaton/ZensonatonTools_TGBot'>открытый исходный код</a>, поэтому ты можешь проверить что он делает 'за кулисами'.
@@ -86,7 +89,7 @@ async def login_handler(msg: types.Message):
 	greet_sticker = await msg.answer_sticker("CAACAgEAAxkBAAEDEzlhZ-J2G8SuIVt0ahDnsHMAAbt-jfwAAudrAAKvGWIHhIr-D4PhzQQhBA")
 
 	# Пытаемся авторизоваться.
-	login_result = await BL.login(arguments[0], arguments[1], msg.from_user.id)
+	login_result = await BL.login(arguments[0], arguments[1], msg.from_user.id, True)
 
 	# В случае ошибки, login_result будет содержать сообщение об ошибке, которое находится в атрибуте "message".
 	if "message" in login_result:
