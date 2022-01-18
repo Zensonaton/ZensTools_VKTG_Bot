@@ -81,10 +81,7 @@ def login(username: str, password: str, user_id: int, force_login: bool = False)
 		"Refresh-Token": 	login_result["refresh_token"],
 		"Male": 			login_result["user_info"]["gender"] == "m",
 		"ID":				user_id,
-		"InlineButtons": 	{},
-		# "School": 		login_result["user_info"]["school"]["name"],
-		# "Location": 		login_result["user_info"]["school"]["address"],
-		# "Class": 			login_result["user_info"]["group"]["name"],
+		"InlineButtons": 	{}
 	}
 
 	Utils.save_data(data, f"User-{user_id}.json")
@@ -92,7 +89,7 @@ def login(username: str, password: str, user_id: int, force_login: bool = False)
 	return data
 
 
-def refreshToken(refresh_token: str) -> dict:
+async def refreshToken(refresh_token: str) -> dict:
 	"""Пытаемся обновить токен.
 
 	Args:
@@ -104,28 +101,23 @@ def refreshToken(refresh_token: str) -> dict:
 
 	url = "https://onlinemektep.net/api/v2/os/refresh_token"
 
-	response = requests.post(
-		url, json={
-            "refreshToken": refresh_token
-        },
-		headers={
+	async with aiohttp.ClientSession() as session:
+		async with session.post(url, headers={
 			"User-Agent": Utils.random_useragent()
-		}
-	)
-		
-	return response.json()
+		}, json={
+			"refreshToken": refresh_token
+		}) as response:
+			return await response.json()
 
 def tokenMayExpire(func) -> dict:
-	def wrapper(*args, **kwargs):
-
-
+	async def wrapper(*args, **kwargs):
 		try:
-			return func(*args, **kwargs)
+			return await func(*args, **kwargs)
 		except TokenHasBeenExpired:
 			user_data = args[0]
 			old_token = user_data["Token"]
 
-			result = refreshToken(user_data["Refresh-Token"])
+			result = await refreshToken(user_data["Refresh-Token"])
 
 			user_data["Token"] = result["access_token"]
 			user_data["Refresh-Token"] = result["refresh_token"]
@@ -144,7 +136,7 @@ def tokenMayExpire(func) -> dict:
 			bot_data["TokensGotRefreshed"] += 1
 			Utils.save_data(bot_data, "Bot.json")
 
-			return func(*args, **kwargs)
+			return await func(*args, **kwargs)
 
 		except Exception as error:
 			raise error
