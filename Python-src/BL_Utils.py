@@ -91,7 +91,69 @@ def login(username: str, password: str, user_id: int, force_login: bool = False)
 
 	return data
 
-def get_schedule(token: str):
+
+def refreshToken(refresh_token: str) -> dict:
+	"""Пытаемся обновить токен.
+
+	Args:
+		user_id (int): Идентификатор пользователя.
+
+	Returns:
+		dict: `dict`-объект со всей информацией о пользователе.
+	"""
+
+	url = "https://onlinemektep.net/api/v2/os/refresh_token"
+
+	response = requests.post(
+		url, json={
+            "refreshToken": refresh_token
+        },
+		headers={
+			"User-Agent": Utils.random_useragent()
+		}
+	)
+		
+	return response.json()
+
+def tokenMayExpire(func) -> dict:
+	def wrapper(*args, **kwargs):
+
+
+		try:
+			return func(*args, **kwargs)
+		except TokenHasBeenExpired:
+			user_data = args[0]
+			old_token = user_data["Token"]
+
+			result = refreshToken(user_data["Refresh-Token"])
+
+			user_data["Token"] = result["access_token"]
+			user_data["Refresh-Token"] = result["refresh_token"]
+
+			Utils.save_data(user_data, f"User-{user_data['ID']}.json")
+
+			# Попытаться снова.
+			args = list(args)
+			for index, arg in enumerate(args):
+				if arg == old_token:
+					args[index] = user_data["Token"]
+
+			# Сохраняем статистику бота:
+
+			bot_data = Utils.load_data("Bot.json")
+			bot_data["TokensGotRefreshed"] += 1
+			Utils.save_data(bot_data, "Bot.json")
+
+			return func(*args, **kwargs)
+
+		except Exception as error:
+			raise error
+
+	return wrapper
+
+
+@tokenMayExpire
+def get_schedule(user_data, token: str):
 	url = "https://onlinemektep.net/api/v2/os/schedules"
 	response = requests.get(
 		url = url, headers = {

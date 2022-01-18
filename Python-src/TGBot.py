@@ -111,7 +111,8 @@ async def sched_handler(msg: types.Message):
 		return
 
 	today = today_date()
-	full_schedule = BL.get_schedule(user_data["Token"])
+	full_schedule = BL.get_schedule(
+		user_data, user_data["Token"])
 
 	# Проверяем, есть ли сегодняшняя дата в расписании.
 	if today not in full_schedule["days"]:
@@ -288,7 +289,8 @@ if __name__ == "__main__":
 			"StartTimestamp": datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
 			"WeeksAnalyzed": 0,
 			"LessonsAnalyzed": 0,
-			"UniqueUsers": 0
+			"UniqueUsers": 0,
+			"TokensGotRefreshed": 0
 		}, "Bot.json")
 
 	executor.start_polling(dp, on_startup=logger.info("Бот запущен!"))
