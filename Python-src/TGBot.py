@@ -111,7 +111,7 @@ async def sched_handler(msg: types.Message):
 		return
 
 	today = today_date()
-	full_schedule = BL.get_schedule(
+	full_schedule = await BL.get_schedule(
 		user_data, user_data["Token"])
 
 	# Проверяем, есть ли сегодняшняя дата в расписании.

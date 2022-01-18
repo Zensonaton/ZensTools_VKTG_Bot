@@ -153,31 +153,31 @@ def tokenMayExpire(func) -> dict:
 
 
 @tokenMayExpire
-def get_schedule(user_data, token: str):
+async def get_schedule(user_data, token: str):
 	url = "https://onlinemektep.net/api/v2/os/schedules"
-	response = requests.get(
-		url = url, headers = {
+
+	async with aiohttp.ClientSession() as session:
+		async with session.get(url, headers={
 			"Authorization": f"Bearer {token}",
-			"X-Localization": "ru",
-		}
-	)
+			"X-Localization": "ru"
+		}) as response:
+			if response.status == 426:
+				raise TokenHasBeenExpired("Токен истёк.")
 
-	if response.status_code == 426:
-		raise TokenHasBeenExpired()
-	response = response.json()
+			response_json = await response.json()
 
-	returnDict = {
-		"days": {},
-		"weeks": response["weeks"],
-		"groupInfo": response["groupInfo"]
-	}
+			returnDict = {
+				"days": {},
+				"weeks": response_json["weeks"],
+				"groupInfo": response_json["groupInfo"]
+			}
 
-	for element in response["days"]:
-		returnDict["days"].update({
-			element["dateFormat"]: element
-		})
+			for element in response_json["days"]:
+				returnDict["days"].update({
+					element["dateFormat"]: element
+				})
 
-	return returnDict
+			return returnDict
 
 
 async def get_lesson_info(less_id: str, token: str) -> dict:
