@@ -33,14 +33,18 @@ if not os.path.exists("./Logs/"):
 	os.mkdir("./Logs/")
 
 # Логирование.
-logging.basicConfig(
-	filename="Logs/TGBot.log",
-)
+# logging.basicConfig(
+# 	filename="Logs/TGBot.log",
+# )
 logger = logging.getLogger(__name__)
 streamHandler = logging.StreamHandler()
 streamHandler.setFormatter(logging.Formatter("[%(levelname)-8s %(asctime)s at %(name)s.%(funcName)s]: %(message)s", "%d.%d.%Y %H:%M:%S"))
-streamHandler.setLevel(logging.INFO)
+streamHandler.setLevel(logging.DEBUG)
 logger.addHandler(streamHandler)
+fileHandler = logging.FileHandler("Logs/TGBot.log")
+fileHandler.setFormatter(logging.Formatter("[%(levelname)-8s %(asctime)s at %(name)s.%(funcName)s]: %(message)s", "%d.%d.%Y %H:%M:%S"))
+fileHandler.setLevel(logging.DEBUG)
+logger.addHandler(fileHandler)
 
 UPTIME = unix_time()
 
