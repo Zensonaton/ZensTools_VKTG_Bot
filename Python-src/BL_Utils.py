@@ -39,7 +39,7 @@ async def get_index_json(lesson_id: int or str) -> str:
 
 			return await response.text()
 
-def login(username: str, password: str, user_id: int, force_login: bool = False) -> dict:
+async def login(username: str, password: str, user_id: int, force_login: bool = False) -> dict:
 	"""Пытаемся залогиниться на сайте.
 
 	Args:
@@ -57,36 +57,42 @@ def login(username: str, password: str, user_id: int, force_login: bool = False)
 
 	url = "https://onlinemektep.net/api/v2/os/login"
 
-	response = requests.post(
-		url, json = {
-			"login": username, "password": password
-		}, 
-		headers = {
+	# response = requests.post(
+	# 	url, json = {
+	# 		"login": username, "password": password
+	# 	}, 
+	# 	headers = {
+	# 		"User-Agent": Utils.random_useragent(),
+	# 		"Accept": "*/*",
+	# 	}
+	# )
+	async with aiohttp.ClientSession() as session:
+		async with session.post(url, headers={
 			"User-Agent": Utils.random_useragent(),
 			"Accept": "*/*",
-		}
-	)
+		}, json={
+			"login": username, "password": password
+		}) as response:
+			login_result = await response.json()
 
-	login_result = response.json()
+			if "message" in login_result:
+				return login_result
 
-	if "message" in login_result:
-		return login_result
+			# Вместо того, что бы хранить *всю* инфу о юзерах с BL, я 
+			# решил сохранять лишь маленький кусочек данной информации,
+			# конфиденциальности ради.
+			data = {
+				"FirstName": 		login_result["user_info"]["firstname"],
+				"Token": 			login_result["access_token"],
+				"Refresh-Token": 	login_result["refresh_token"],
+				"Male": 			login_result["user_info"]["gender"] == "m",
+				"ID":				user_id,
+				"InlineButtons": 	{}
+			}
 
-	# Вместо того, что бы хранить *всю* инфу о юзерах с BL, я 
-	# решил сохранять лишь маленький кусочек данной информации,
-	# конфиденциальности ради.
-	data = {
-		"FirstName": 		login_result["user_info"]["firstname"],
-		"Token": 			login_result["access_token"],
-		"Refresh-Token": 	login_result["refresh_token"],
-		"Male": 			login_result["user_info"]["gender"] == "m",
-		"ID":				user_id,
-		"InlineButtons": 	{}
-	}
+			Utils.save_data(data, f"User-{user_id}.json")
 
-	Utils.save_data(data, f"User-{user_id}.json")
-
-	return data
+			return data
 
 
 async def refreshToken(refresh_token: str) -> dict:
