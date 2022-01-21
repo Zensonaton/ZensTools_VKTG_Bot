@@ -16,7 +16,12 @@ from 	Utils 				import 	int_to_emojis, load_data, random_uuid, save_data, second
 from 	textwrap 			import 	shorten
 import 	traceback
 import 	logging
+import 	time
 import 	os
+
+# Меняем Timezone:
+os.environ["TZ"] = "Asia/Almaty"
+time.tzset()
 
 # Загружаем .env файл.
 load_dotenv()
@@ -48,8 +53,6 @@ fileHandler.setLevel(logging.DEBUG)
 logger.addHandler(fileHandler)
 
 UPTIME = unix_time()
-
-# TODO: Timezone for /stats
 
 @dp.message_handler(commands = ["start", "start", "старт",])
 async def message_handler(msg: types.Message):
