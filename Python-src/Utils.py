@@ -11,10 +11,6 @@ import hashlib
 import time
 import uuid
 
-def is_a_valid_index_url(url: str) -> bool:
-	"""Выдаёт `True`, если `url` является правильной ссылкой для файла index.json."""
-	return bool(re.match(r"https:\/\/onlinemektep\.net\/upload\/online_mektep\/lesson\/[a-fA-F0-9]{32}\/index.json$", url))
-
 def load_data(filename: str, store_folder: str = "Data") -> dict:
 	"""Загружает информацию с файла `store_folder/filename`, и выдаёт `dict`-объект с информацией о пользователе. Данные хранятся как .JSON-файлы в папке `Data`.
 
@@ -34,7 +30,7 @@ def load_data(filename: str, store_folder: str = "Data") -> dict:
 		open(path, "r", encoding = "utf-8")
 	)
 
-def save_data(data: dict, filename: str, store_folder: str = "Data") -> None:
+def save_data(data: dict, filename: str, store_folder: str = "Data") -> dict:
 	path = os.path.join(store_folder, filename)
 
 	if not os.path.exists( os.path.dirname(path) ):
@@ -220,24 +216,57 @@ def seconds_to_userfriendly_string(seconds, max=2, minutes=True, hours=True, day
 
 	seconds = int(seconds)
 
-	if seconds < 0: seconds = -seconds
-	newSeconds = seconds; string = []; values = [60, 3600, 86400, 604800, 2678400, 31536000, 315360000]; maxCount = max; valuesgot = {"decades": 0, "years": 0, "months": 0, "weeks": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}; stringslocal = [["век","века","века","века","веков"], ["год","года","года","года","лет"],["месяц","месяца","месяца","месяца","месяцев"],["неделя","недели","недели","неделей"],["день","дня","дня","дней"],["час","часа","часа","часов"],["минута","минуты","минуты","минут",],["секунда","секунды","секунды","секунд"]]
+	if seconds < 0:
+		seconds = -seconds
+	newSeconds = seconds
+	string = []
+	values = [60, 3600, 86400, 604800, 2678400, 31536000, 315360000]
+	maxCount = max
+	valuesgot = {"decades": 0, "years": 0, "months": 0,
+              "weeks": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
+	stringslocal = [["век", "века", "века", "века", "веков"], ["год", "года", "года", "года", "лет"], ["месяц", "месяца", "месяца", "месяца", "месяцев"], ["неделя", "недели",
+                                                                                                                                                        "недели", "неделей"], ["день", "дня", "дня", "дней"], ["час", "часа", "часа", "часов"], ["минута", "минуты", "минуты", "минут", ], ["секунда", "секунды", "секунды", "секунд"]]
 	while True:
-		if newSeconds >= values[6] and decades: newSeconds -= values[6]; valuesgot["decades"] += 1
-		elif newSeconds >= values[5] and years: newSeconds -= values[5]; valuesgot["years"] += 1
-		elif newSeconds >= values[4] and months: newSeconds -= values[4]; valuesgot["months"] += 1
-		elif newSeconds >= values[3] and weeks: newSeconds -= values[3]; valuesgot["weeks"] += 1
-		elif newSeconds >= values[2] and days: newSeconds -= values[2]; valuesgot["days"] += 1
-		elif newSeconds >= values[1] and hours: newSeconds -= values[1]; valuesgot["hours"] += 1
-		elif newSeconds >= values[0] and minutes: newSeconds -= values[0]; valuesgot["minutes"] += 1
-		else: valuesgot["seconds"] += newSeconds; newSeconds = 0; break
+		if newSeconds >= values[6] and decades:
+			newSeconds -= values[6]
+			valuesgot["decades"] += 1
+		elif newSeconds >= values[5] and years:
+			newSeconds -= values[5]
+			valuesgot["years"] += 1
+		elif newSeconds >= values[4] and months:
+			newSeconds -= values[4]
+			valuesgot["months"] += 1
+		elif newSeconds >= values[3] and weeks:
+			newSeconds -= values[3]
+			valuesgot["weeks"] += 1
+		elif newSeconds >= values[2] and days:
+			newSeconds -= values[2]
+			valuesgot["days"] += 1
+		elif newSeconds >= values[1] and hours:
+			newSeconds -= values[1]
+			valuesgot["hours"] += 1
+		elif newSeconds >= values[0] and minutes:
+			newSeconds -= values[0]
+			valuesgot["minutes"] += 1
+		else:
+			valuesgot["seconds"] += newSeconds
+			newSeconds = 0
+			break
 	for index, key in enumerate(valuesgot):
 		if valuesgot[key] != 0:
-			if len(stringslocal[index]) > valuesgot[key]: string.append(str(valuesgot[key]) + " " + stringslocal[index][valuesgot[key] - 1])
-			else: string.append(str(valuesgot[key]) + " " + stringslocal[index][len(stringslocal[index]) - 1])
-	if len(string) == 0: string.append("0 секунд")
+			if len(stringslocal[index]) > valuesgot[key]:
+				string.append(str(valuesgot[key]) + " " +
+				              stringslocal[index][valuesgot[key] - 1])
+			else:
+				string.append(str(valuesgot[key]) + " " +
+				              stringslocal[index][len(stringslocal[index]) - 1])
+	if len(string) == 0:
+		string.append("0 секунд")
 	newStr = []
-	for fstring in string:
-		if maxCount > 0: newStr.append(fstring); maxCount -= 1
-		else: break
+	for formatted_string in string:
+		if maxCount > 0:
+			newStr.append(formatted_string)
+			maxCount -= 1
+		else:
+			break
 	return ", ".join(newStr)

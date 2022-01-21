@@ -3,6 +3,7 @@
 import asyncio
 import datetime
 import sys
+from typing import Tuple
 from    aiogram             import 	Bot, types, md
 from    aiogram.dispatcher  import 	Dispatcher
 from    aiogram.utils       import 	executor, markdown
@@ -76,7 +77,7 @@ async def stats(msg: types.Message):
 
 @dp.message_handler(commands = ["login", "логин"])
 async def login_handler(msg: types.Message):
-	arguments = msg.get_args().split(" ")
+	arguments = msg.get_args().split(" ") # pyright: reportOptionalMemberAccess=false
 
 	if len(arguments) != 2:
 		await msg.answer("Для входа нужен логин <b>и</b> пароль.\n\nПример использования команды: <code>/login alexey_victor 123456</code>")
@@ -144,7 +145,7 @@ async def sched_handler(msg: types.Message):
 		reply_markup=sched_keyboard
 	)
 
-async def generate_schedule_string(msg: types.Message, full_schedule: dict, smaller_version: bool) -> str:
+async def generate_schedule_string(msg: types.Message, full_schedule: dict, smaller_version: bool) -> Tuple[str, types.InlineKeyboardMarkup]:
 	keys = []
 	today = today_date()
 	todays_schedule = full_schedule["days"][today]
@@ -198,7 +199,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 					# Декодируем URL
 					lesson_decoded_url = await BL.decode_url(lesson_downloaded, lesson["scheduleId"])
 
-					# Чекаем, нету ли ошибки:
+					# Проверяем, нету ли ошибки:
 					if "Something went wrong :-(" in lesson_decoded_url:
 						raise Exception("Ошибка при получении урока, вероятнее всего сервер дешифровки ответов упал.")
 					
@@ -212,8 +213,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 
 			if lesson_decoded_url is None:
 				await msg.answer("Сайт с ответами упал. Попробуй получить расписание позже.")
-
-				return
+				raise Exception("Сайт с ответами упал.")
 
 					
 

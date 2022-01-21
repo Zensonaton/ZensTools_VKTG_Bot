@@ -17,7 +17,7 @@ class TokenIsBroken(Exception):
 	
 	pass
 
-async def get_index_json(lesson_id: int or str) -> str:
+async def get_index_json(lesson_id: int | str) -> str:
 	"""Загружает `index.json` файл через данный этой функции `lesson_id`.
 
 	Args:
@@ -120,7 +120,7 @@ async def refreshToken(refresh_token: str) -> dict:
 		}) as response:
 			return await response.json()
 
-def tokenMayExpire(func) -> dict:
+def tokenMayExpire(func):
 	async def wrapper(*args, **kwargs):
 		try:
 			return await func(*args, **kwargs)
