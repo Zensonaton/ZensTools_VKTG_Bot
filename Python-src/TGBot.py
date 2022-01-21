@@ -64,7 +64,7 @@ async def message_handler(msg: types.Message):
 @dp.message_handler(commands=["help", "команды", "помощь", "info", "инфо"])
 async def help(msg: types.Message):
 	await msg.answer(
-		f"ℹ️ <b>Список команд у данного бота</b>:\n\n/login логин пароль — вход в аккаунт Bilimland.\n/schedule — получить список расписания уроков в Bilimland, а так же ссылки на ответы. <i>Работает только после авторизации.</i>\n/feedback — возможность написать автору бота в случае, к примеру, бага.\n/stats — различная статистика бота.\n/logout — выход из аккаунта Bilimland, и дальнейшее удаление сохранённых ботом данных о данном пользователе.\n\n🐛🔫 В данный момент, у бота существуют некоторые проблемы, из которых:\n<b>1</b>. Невозможность получать список расписания в 23:00 - 00:00.\nВсе эти проблемы будут исправлены в скором времени.\n\n<span class=\"tg-spoiler\">🚧 В будущем планируется добавление функции, при которой <b>бот, сам, в автоматическом режиме</b>, будет расставлять правильные ответы, однако шанс разработки таковой функции достаточно мал ввиду технических ограничений.</span>"
+		f"ℹ️ <b>Список команд у данного бота</b>:\n\n/login логин пароль — вход в аккаунт Bilimland.\n/schedule — получить список расписания уроков в Bilimland, а так же ссылки на ответы. Так же возможно указать дату, на которой нужно получить расписание: <code>/schedule дд.мм.гг</code>. <i>Эта команда работает только после авторизации.</i>\n/feedback — возможность написать автору бота в случае, к примеру, бага.\n/stats — различная статистика бота.\n/logout — выход из аккаунта Bilimland, и дальнейшее удаление сохранённых ботом данных о данном пользователе.\n\n🐛🔫 В данный момент, у бота существуют некоторые проблемы, из которых:\n<b>1</b>. Невозможность получать список расписания в 23:00 - 00:00.\nВсе эти проблемы будут исправлены в скором времени.\n\n<span class=\"tg-spoiler\">🚧 Функция, в которой <b>бот, сам, в автоматическом режиме</b>, будет расставлять правильные ответы уже почти готова!</span>"
 	)
 
 @dp.message_handler(commands=["stats", "stat", "статы", "statistics", "статистика"])
@@ -137,10 +137,21 @@ async def sched_handler(msg: types.Message):
 
 		return
 
-	today = today_date()
+	schedule_date = today_date()
+	arguments = msg.get_args().split(" ")
+	dateWasGiven = False
+	if len(arguments) == 1 and arguments[0] != "":
+		try:
+			schedule_date_dt = datetime.datetime.strptime(arguments[0], "%d.%m.%y")
+			schedule_date = schedule_date_dt.strftime("%d.%m.%Y") # Превращаем "1.2.33" в "1.2.3333"
+			dateWasGiven = True
+		except ValueError:
+			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты 👀.\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date()}</code>.")
+			return
+
 	try:
 		full_schedule = await BL.get_schedule(
-			user_data, user_data["Token"])
+			user_data, user_data["Token"], schedule_date)
 	except:
 		await msg.answer_sticker("CAACAgEAAxkBAAEDEzthZ-PBNrIKxd1YItQmcTItwNi1VwACcIMAAq8ZYgfAbLJhK3qxuiEE")
 
@@ -151,24 +162,23 @@ async def sched_handler(msg: types.Message):
 		return
 
 	# Проверяем, есть ли сегодняшняя дата в расписании.
-	if today not in full_schedule["days"]:
-		await msg.answer("У-упс! Я столкнулся с внутренней ошибкой, связанной с расписанием. Этот баг мне известен, он будет исправлен позже. А сейчас, ты можешь лишь подождать <code>00:00</code>, а ещё будет лучше попробовать снова завтра днём!")
+	if schedule_date not in full_schedule["days"]:
+		await msg.answer(f"<i>Упс!</i> {'Похоже, что я' if dateWasGiven else 'Я'} столкнулся с внутренней ошибкой, связанной с расписанием. {'Вероятнее всего, это произошло из за даты, которую ты ввёл<i>(-а)</i>, либо же это произошло из-за бага, что' if dateWasGiven else 'Этот баг'} мне известен, он будет исправлен позже. А сейчас, ты можешь лишь подождать <code>00:00</code>, а ещё будет лучше попробовать снова завтра днём!")
 
 		return
 
-	todays_schedule 			= full_schedule["days"][today]
-	sched_str, sched_keyboard 	= await generate_schedule_string(msg, full_schedule, True)
+	day_schedule 				= full_schedule["days"][schedule_date]
+	sched_str, sched_keyboard 	= await generate_schedule_string(msg, full_schedule, schedule_date, dateWasGiven, user_data["Token"], True)
 
 	await msg.answer(
 		# f"Расписание на сегодня, <code>{today}</code>. У тебя сегодня {int_to_emojis(len(todays_schedule['schedule']))} уроков, из которых:\n{sched_str}\n<code>{'ㅤ' * 30}</code>\nКакой из данных предметов ты хочешь автоматически выполнить? 🤔\n<i>(заметка: балл, который ты хочешь получить можно будет указать после выбора предмета.)</i>",
-		f"📆 Расписание на сегодня, <code>{today}</code>. У тебя сегодня {int_to_emojis(len(todays_schedule['schedule']))} уроков, из которых:\n{sched_str}\n<code>{'ㅤ' * 30}</code>\nКликни на кнопку ниже для открытия сайта с дешифрованным уроком! 😜",
+		f"📆 Расписание на {'указанную тобой дату' if dateWasGiven else 'сегодня'}, <code>{schedule_date}</code>. {'В эту дату указывается' if dateWasGiven else 'У тебя сегодня'} {int_to_emojis(len(day_schedule['schedule']))} уроков, из которых:\n{sched_str}\n<code>{'ㅤ' * 30}</code>\nКликни на кнопку ниже для открытия сайта с дешифрованным уроком! 😜\nТак же, ты можешь воспользоваться командой <code>/schedule дд.мм.гг</code>, для получения расписания за другую дату. 👀",
 		reply_markup=sched_keyboard
 	)
 
-async def generate_schedule_string(msg: types.Message, full_schedule: dict, smaller_version: bool) -> Tuple[str, types.InlineKeyboardMarkup]:
+async def generate_schedule_string(msg: types.Message, full_schedule: dict, schedule_date: str, date_was_chosen_by_user: bool = False, user_access_token: str = None, smaller_version: bool = True) -> Tuple[str, types.InlineKeyboardMarkup]:
 	keys = []
-	today = today_date()
-	todays_schedule = full_schedule["days"][today]
+	todays_schedule = full_schedule["days"][schedule_date]
 	lessons_list = ""
 	keyboard = InlineKeyboardMarkup(row_width = 4)
 	user_data = load_data(f"User-{msg.from_user.id}.json")
@@ -191,7 +201,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 	if non_downloaded_lessons:
 		bot_data["WeeksAnalyzed"] += 1
 
-		notification_msg = await msg.answer(f"<i>Прямо сейчас я загружаю все <b>{len(non_downloaded_lessons)}</b> уроков в твоём сегодняшнем расписании, а так же занимаюсь процессом их дешифрования, пожалуйста, подожди, это может занять 5-20 секунд...</i>")
+		notification_msg = await msg.answer(f"<i>Прямо сейчас я загружаю все <b>{len(non_downloaded_lessons)}</b> уроков в {'расписании на тот день, что был указан мне' if date_was_chosen_by_user else 'твоём сегодняшнем расписании'}, а так же занимаюсь процессом их дешифрования, пожалуйста, подожди, это может занять 5-20 секунд...</i>")
 
 	for index, lesson in enumerate(todays_schedule["schedule"]):
 		if index > 0:
@@ -211,7 +221,11 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 			# Получаем LessonID
 			lesson_info = await BL.get_lesson_info(lesson["scheduleId"], user_data["Token"])
 			# Получаем index.json
-			lesson_downloaded = await BL.get_index_json(lesson_info["data"]["lessonId"])
+			if date_was_chosen_by_user:
+				lesson_downloaded = await BL.get_index_json(lesson_info["data"]["lessonId"], user_access_token)
+			else:
+				lesson_downloaded = await BL.get_index_json(lesson_info["data"]["lessonId"])
+
 			retries = 3
 			lesson_decoded_url = None
 			while retries > 0:
@@ -226,6 +240,9 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, smal
 					break
 
 				except:
+					if retries <= 0:
+						break
+
 					await msg.answer(f"<i>Что-то пошло не так, и я не сумел связаться с сервером дешифровки ответов. Я попробую ещё {retries} раз, но с большей задержкой.</i>")
 					await asyncio.sleep(5)
 				finally:

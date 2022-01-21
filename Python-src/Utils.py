@@ -128,6 +128,9 @@ def random_useragent() -> str:
 def today_date() -> str:
 	return datetime.today().strftime("%d.%m.%Y")
 
+def today_date_small_year() -> str:
+	return datetime.today().strftime("%d.%m.%н")
+
 def debug_save_to_json(obj: dict or str, filename: str = "debug.json"):
 	if isinstance(obj, str):
 		open(filename, "w", encoding = "utf-8").write(obj)

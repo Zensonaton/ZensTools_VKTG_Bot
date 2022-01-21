@@ -17,17 +17,34 @@ class TokenIsBroken(Exception):
 	
 	pass
 
-async def get_index_json(lesson_id: int | str) -> str:
+async def get_index_json(lesson_id: int | str, auth_token: str = None) -> str:
 	"""Загружает `index.json` файл через данный этой функции `lesson_id`.
 
 	Args:
 		lesson_id (int | str): Строка, или число, определяющее номер урока.
+		auth_token (str): Токен авторизации. Нужен только в случае, если урок находится на другой неделе, и Bilimland не даёт к нему доступ. (будет запрос к /api/v2/os/lesson-access)
 
 	Returns:
 		str: Содержимое `index.json` файла.
 	"""
 
-	url = "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
+	URL_LESSON_ACCESS = "https://onlinemektep.net/api/v2/os/lesson-access"
+	headers = {}
+
+	if auth_token:
+		async with aiohttp.ClientSession() as session:
+			async with session.post(URL_LESSON_ACCESS, headers={
+				"Authorization": f"Bearer {auth_token}"
+			}, json={
+				"lessonId": lesson_id
+			}) as response:
+				# Нам необходимо передавать значение с Bearer-токеном вместе с запросом на получение файла index.json.
+
+				headers.update({
+					"secure-token": (await response.json())["data"]["jwt"]
+				})
+
+	URL = "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
 
 	if isinstance(lesson_id, int):
 		lesson_id = f"L_{lesson_id}"
@@ -36,10 +53,10 @@ async def get_index_json(lesson_id: int | str) -> str:
 	lesson_id = Utils.toMD5(Utils.toMD5(lesson_id))
 
 	# Вставляем в URL номер урока. (который является MD5 хешем, завёрнутый в MD5 хеш.)
-	url = url.format(lesson_id)
+	URL = URL.format(lesson_id)
 
 	async with aiohttp.ClientSession() as session:
-		async with session.get(url) as response:
+		async with session.get(URL, headers=headers) as response:
 			# Выдаём содержимое загруженного файла. Не забываем, что это *не* JSON.
 
 			return await response.text()
@@ -156,11 +173,13 @@ def tokenMayExpire(func):
 
 
 @tokenMayExpire
-async def get_schedule(user_data, token: str):
-	url = "https://onlinemektep.net/api/v2/os/schedules"
+async def get_schedule(user_data, token: str, schedule_date: str):
+	# // TODO: Добавить Quarter, на случай, если какой-то юзверь-извращенец решит сделать домашку за 1 января 19 года. Мало ли!
+
+	URL = f"https://onlinemektep.net/api/v2/os/schedules?date={schedule_date}"
 
 	async with aiohttp.ClientSession() as session:
-		async with session.get(url, headers={
+		async with session.get(URL, headers={
 			"Authorization": f"Bearer {token}",
 			"X-Localization": "ru"
 		}) as response:
