@@ -17,7 +17,63 @@ class TokenIsBroken(Exception):
 	
 	pass
 
-async def get_index_json(lesson_id: int | str, auth_token: str = None) -> str:
+async def refreshToken(refresh_token: str) -> dict:
+	"""Пытаемся обновить токен.
+
+	Args:
+		user_id (int): Идентификатор пользователя.
+
+	Returns:
+		dict: `dict`-объект со всей информацией о пользователе.
+	"""
+
+	url = "https://onlinemektep.net/api/v2/os/refresh_token"
+
+	async with aiohttp.ClientSession() as session:
+		async with session.post(url, headers={
+			"User-Agent": Utils.random_useragent()
+		}, json={
+			"refreshToken": refresh_token
+		}) as response:
+			return await response.json()
+
+def tokenMayExpire(func):
+	async def wrapper(*args, **kwargs):
+		try:
+			return await func(*args, **kwargs)
+		except TokenHasBeenExpired:
+			user_data = args[0]
+			old_token = user_data["Token"]
+
+			result = await refreshToken(user_data["Refresh-Token"])
+
+			user_data["Token"] = result["access_token"]
+			user_data["Refresh-Token"] = result["refresh_token"]
+
+			Utils.save_data(user_data, f"User-{user_data['ID']}.json")
+
+			# Попытаться снова.
+			args = list(args)
+			for index, arg in enumerate(args):
+				if arg == old_token:
+					args[index] = user_data["Token"]
+
+			# Сохраняем статистику бота:
+
+			bot_data = Utils.load_data("Bot.json")
+			bot_data["TokensGotRefreshed"] += 1
+			Utils.save_data(bot_data, "Bot.json")
+
+			return await func(*args, **kwargs)
+
+		except Exception as error:
+			raise error
+
+	return wrapper
+
+
+# @tokenMayExpire
+async def get_index_json(auth_token: str, lesson_id: int | str) -> str:
 	"""Загружает `index.json` файл через данный этой функции `lesson_id`.
 
 	Args:
@@ -115,61 +171,6 @@ async def login(username: str, password: str, user_id: int, force_login: bool = 
 			Utils.save_data(data, f"User-{user_id}.json")
 
 			return data
-
-
-async def refreshToken(refresh_token: str) -> dict:
-	"""Пытаемся обновить токен.
-
-	Args:
-		user_id (int): Идентификатор пользователя.
-
-	Returns:
-		dict: `dict`-объект со всей информацией о пользователе.
-	"""
-
-	url = "https://onlinemektep.net/api/v2/os/refresh_token"
-
-	async with aiohttp.ClientSession() as session:
-		async with session.post(url, headers={
-			"User-Agent": Utils.random_useragent()
-		}, json={
-			"refreshToken": refresh_token
-		}) as response:
-			return await response.json()
-
-def tokenMayExpire(func):
-	async def wrapper(*args, **kwargs):
-		try:
-			return await func(*args, **kwargs)
-		except TokenHasBeenExpired:
-			user_data = args[0]
-			old_token = user_data["Token"]
-
-			result = await refreshToken(user_data["Refresh-Token"])
-
-			user_data["Token"] = result["access_token"]
-			user_data["Refresh-Token"] = result["refresh_token"]
-
-			Utils.save_data(user_data, f"User-{user_data['ID']}.json")
-
-			# Попытаться снова.
-			args = list(args)
-			for index, arg in enumerate(args):
-				if arg == old_token:
-					args[index] = user_data["Token"]
-
-			# Сохраняем статистику бота:
-
-			bot_data = Utils.load_data("Bot.json")
-			bot_data["TokensGotRefreshed"] += 1
-			Utils.save_data(bot_data, "Bot.json")
-
-			return await func(*args, **kwargs)
-
-		except Exception as error:
-			raise error
-
-	return wrapper
 
 
 @tokenMayExpire

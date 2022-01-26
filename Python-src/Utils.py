@@ -9,9 +9,10 @@ import json
 import base64
 import hashlib
 import time
+from typing import Any
 import uuid
 
-def load_data(filename: str, store_folder: str = "Data") -> dict:
+def load_data(filename: str, store_folder: str = "Data", throw_error_if_does_not_exists: bool = True, required_keys: list = []) -> Any:
 	"""Загружает информацию с файла `store_folder/filename`, и выдаёт `dict`-объект с информацией о пользователе. Данные хранятся как .JSON-файлы в папке `Data`.
 
 	Args:
@@ -24,11 +25,19 @@ def load_data(filename: str, store_folder: str = "Data") -> dict:
 	path = f"{store_folder}/{filename}"
 
 	if not os.path.exists(path):
+		if throw_error_if_does_not_exists:
+			raise FileNotFoundError("Файл не был найден.")
+
 		return {}
 
-	return json.load(
+	loaded = json.load(
 		open(path, "r", encoding = "utf-8")
 	)
+	for key in required_keys:
+		if key not in loaded:
+			raise FileNotFoundError("Ключа нет")
+
+	return loaded
 
 def save_data(data: dict, filename: str, store_folder: str = "Data") -> dict:
 	path = os.path.join(store_folder, filename)
