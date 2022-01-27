@@ -326,7 +326,8 @@ async def schedule_handler(msg: types.Message):
 
 	await msg.answer(
 		f"📆 Расписание на {'указанную тобой дату' if dateWasGiven else 'сегодня'}, <code>{schedule_date}</code>. {'В эту дату указывается' if dateWasGiven else 'У тебя сегодня'} {int_to_emojis(len(day_schedule['schedule']))} уроков, из которых:\n{sched_str}\n<code>{'ㅤ' * 30}</code>\nКликни на кнопку ниже для открытия сайта с дешифрованным уроком! 😜\nНажав на название урока выше, ты можешь перейти открыть Bilimland с этим уроком. Вау, технологии<a href=\"https://www.youtube.com/watch?v=Fqyes1_IJ1c\">! 😱</a>\nТак же, ты можешь воспользоваться командой <code>/schedule дд.мм.гг</code>, для получения расписания за другую дату. 👀",
-		reply_markup=sched_keyboard
+		reply_markup=sched_keyboard,
+		disable_web_page_preview=True
 	)
 
 async def generate_schedule_string(msg: types.Message, full_schedule: dict, schedule_date: str, date_was_chosen_by_user: bool = False, user_access_token: None | str = None, smaller_version: bool = True) -> Tuple[str, types.InlineKeyboardMarkup]:
