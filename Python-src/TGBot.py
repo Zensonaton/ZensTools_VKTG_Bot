@@ -35,10 +35,11 @@ bot = Bot(
 	parse_mode  = types.ParseMode.HTML
 )
 
+PROD = (os.getenv("PRODUCTION", "false").lower() == "true")
+
+
 # Обработчик команд.
 dp = Dispatcher(bot)
-
-# // TODO: ссылки для быстрого перехода на урок через /[a]schedule
 
 if not os.path.exists("./Logs/"):
 	os.mkdir("./Logs/")
@@ -88,7 +89,7 @@ async def stats(msg: types.Message):
 	startDate = datetime.datetime.strptime(bot_data['StartTimestamp'], '%d.%m.%Y %H:%M:%S')
 
 	await msg.answer(
-		f"За <b>{(datetime.datetime.now() - startDate).days}</b> дней своей работы, <i>(период с <b>{startDate}</b> по сегодняшний день)</i> бот сумел проанализировать <b>{bot_data['WeeksAnalyzed']}</b> учебных недель, с общим количеством анализированных уроков — <b>{bot_data['LessonsAnalyzed']}</b>. Активных <s>списывающих</s> проверяющих себя пользователей у бота — <b>{bot_data['UniqueUsers']}</b>, сессий восстановлено <i>(токенов перевыпущено)</i>: <b>{bot_data['TokensGotRefreshed']}</b>. Uptime бота: <b>{seconds_to_userfriendly_string(unix_time() - UPTIME, weeks=True, months=True)}</b>."
+		f"За <b>{(datetime.datetime.now() - startDate).days}</b> дней своей работы, <i>(период с <b>{startDate}</b> по сегодняшний день)</i> бот сумел проанализировать <b>{bot_data['WeeksAnalyzed']}</b> учебных недель, с общим количеством анализированных уроков — <b>{bot_data['LessonsAnalyzed']}</b>. Активных <s>списывающих</s> проверяющих себя пользователей у бота — <b>{bot_data['UniqueUsers']}</b>, сессий восстановлено <i>(токенов перевыпущено)</i>: <b>{bot_data['TokensGotRefreshed']}</b>. Uptime бота: <b>{seconds_to_userfriendly_string(unix_time() - UPTIME, weeks=True, months=True)}</b>. Бот запущен {'на хостинге' if PROD else '<b><u>локально</u></b>'}."
 	)
 
 @dp.message_handler(commands = ["login", "логин"])
