@@ -138,7 +138,7 @@ def today_date() -> str:
 	return datetime.today().strftime("%d.%m.%Y")
 
 def today_date_small_year() -> str:
-	return datetime.today().strftime("%d.%m.%н")
+	return datetime.today().strftime("%d.%m.%y")
 
 def debug_save_to_json(obj: dict or str, filename: str = "debug.json"):
 	if isinstance(obj, str):

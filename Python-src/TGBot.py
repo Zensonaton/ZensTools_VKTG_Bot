@@ -12,7 +12,7 @@ import 	aiohttp
 from    dotenv              import 	load_dotenv
 import 	BL_Utils			as _BL
 import 	BL_AutoParser		as BL
-from 	Utils 				import 	int_to_emojis, load_data, random_uuid, save_data, seconds_to_userfriendly_string, today_date, unix_time
+from 	Utils 				import 	int_to_emojis, load_data, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_small_year, unix_time
 from 	textwrap 			import 	shorten
 import 	traceback
 import 	datetime
@@ -154,7 +154,7 @@ async def schedule_handler(msg: types.Message):
 			schedule_date = schedule_date_dt.strftime("%d.%m.%Y") # Превращаем "1.2.33" в "1.2.3333"
 			dateWasGiven = True
 		except ValueError:
-			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты 👀.\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date()}</code>.")
+			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты 👀.\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date_small_year()}</code>.")
 			return
 
 	try:
