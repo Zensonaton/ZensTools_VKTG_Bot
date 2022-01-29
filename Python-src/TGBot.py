@@ -106,7 +106,7 @@ async def login_handler(msg: types.Message):
 	greet_sticker = await msg.answer_sticker("CAACAgEAAxkBAAEDEzlhZ-J2G8SuIVt0ahDnsHMAAbt-jfwAAudrAAKvGWIHhIr-D4PhzQQhBA")
 
 	# Пытаемся авторизоваться.
-	login_result = await BL.login(arguments[0], arguments[1], msg.from_user.id, True)
+	login_result = await _BL.login(arguments[0], arguments[1], msg.from_user.id, True)
 
 	# В случае ошибки, login_result будет содержать сообщение об ошибке, которое находится в атрибуте "message".
 	if "message" in login_result:

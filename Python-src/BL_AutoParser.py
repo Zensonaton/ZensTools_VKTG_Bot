@@ -1019,63 +1019,6 @@ async def send_store_state(userData: dict, token: str, final_store_state: dict):
 
 			return await response.json()
 
-async def login(username: str, password: str, user_id: int, force_login: bool = False) -> dict:
-	"""Пытаемся залогиниться на сайте.
-
-	Args:
-		username (str): Логин.
-		password (str): Пароль.
-		user_id (int): Идентификатор пользователя.
-		force_login (bool, optional): `True`, если функция будет переавторизоваться, наплевав на кэш.
-
-	Returns:
-		dict: `dict`-объект со всей информацией о пользователе.
-	"""
-
-	if not force_login and os.path.exists(f"Data/User-{user_id}.json"):
-		return Utils.load_data(f"User-{user_id}.json")
-
-	url = "https://onlinemektep.net/api/v2/os/login"
-
-	# response = requests.post(
-	# 	url, json = {
-	# 		"login": username, "password": password
-	# 	}, 
-	# 	headers = {
-	# 		"User-Agent": Utils.random_useragent(),
-	# 		"Accept": "*/*",
-	# 	}
-	# )
-	async with aiohttp.ClientSession() as session:
-		async with session.post(url, headers={
-			"User-Agent": Utils.random_useragent(),
-			"Accept": "*/*",
-		}, json={
-			"login": username, "password": password
-		}) as response:
-			login_result = await response.json()
-
-			if "message" in login_result:
-				return login_result
-
-			# Вместо того, что бы хранить *всю* инфу о юзерах с BL, я 
-			# решил сохранять лишь маленький кусочек данной информации,
-			# конфиденциальности ради.
-			data = {
-				"FirstName": 		login_result["user_info"]["firstname"],
-				"Token": 			login_result["access_token"],
-				"Refresh-Token": 	login_result["refresh_token"],
-				"Male": 			login_result["user_info"]["gender"] == "m",
-				"BilimlandID":		login_result["user_info"]["userId"],
-				"ID":				user_id,
-				"InlineButtons": 	{}
-			}
-
-			Utils.save_data(data, f"User-{user_id}.json")
-
-			return data
-
-
 async def main():
 	DAY_INDEX = 0		# // TODO
 	LESSON_INDEX = 0	# // TODO
