@@ -317,39 +317,6 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 
 	return lessons_list, keyboard
 
-async def download_all_lesson_answers(schedule: dict, use_lesson_access, token: str):
-	return
-
-	async def _download(lesson_id: int, scheduleID: str, use_lesson_access: bool):
-		url = await BL.get_lesson_answers_link(lesson_id)
-		indexjson_encrypted = None
-		if use_lesson_access:
-			access_response = await BL.get_lesson_access(token, lesson_id)
-			indexjson_encrypted = await BL.get_lesson_answers_file(url, access_response["data"]["jwt"])
-		else:
-			indexjson_encrypted = await BL.get_lesson_answers_file(url)
-
-		# Загрузим файл на мой сайт.
-		lesson_decoded_url = await _BL.decode_url(indexjson_encrypted, lesson["scheduleId"])
-
-		# Расшифровываем, парсим.
-		decoded = await BL.decode_lesson_answers_file(indexjson_encrypted)
-		parsed = await BL.parse_lesson_answers(decoded)
-
-		return json.dumps(parsed, ensure_ascii=False, sort_keys=True, indent=4)
-
-	tasks = []
-
-	for lesson in schedule["schedule"]:
-		tasks.append(asyncio.ensure_future(_download(lesson["calendarPlanLesson"]["entityId"], lesson["scheduleId"], use_lesson_access)))
-
-	all_lessons_downloaded = await asyncio.gather(*tasks)
-
-	for index, lesson in enumerate(all_lessons_downloaded):
-		filepath = f"Data/Index-{schedule['schedule'][index]['scheduleId']}.jsonc"
-		if not os.path.exists(filepath):
-			open(filepath, "w", encoding="utf-8").write(lesson)
-
 @dp.message_handler(commands=["contact", "feedback", "фидбэк", "фидбек", "отзыв"])
 async def feedback(msg: types.Message):
 	user_data = load_data(f"User-{msg.from_user.id}.json")
