@@ -1,5 +1,7 @@
 aiogram==2.18
 aiohttp==3.8.1
+geckodriver_autoinstaller==0.1.0
 PGPy==0.5.4
 python-dotenv==0.19.2
 requests==2.26.0
+selenium==4.1.0
