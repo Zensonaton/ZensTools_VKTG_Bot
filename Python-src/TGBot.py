@@ -7,13 +7,14 @@ from    aiogram.dispatcher  import 	Dispatcher
 from    aiogram.utils       import 	executor, markdown
 from 	aiogram.types 		import 	ReplyKeyboardRemove, \
 									ReplyKeyboardMarkup, KeyboardButton, \
-									InlineKeyboardMarkup, InlineKeyboardButton, Update
+									InlineKeyboardMarkup, InlineKeyboardButton, Update, MediaGroup, InputFile, InputMedia
 import 	aiohttp
 from    dotenv              import 	load_dotenv
 import 	BL_Utils			as _BL
-import 	BL_AutoParser		as BL
-from 	Utils 				import 	int_to_emojis, load_data, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_small_year, unix_time
+import 	BL_AutoParser		as BL	
+from 	Utils 				import 	convert_datetime_to_string, int_to_emojis, load_data, parse_date_as_string, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_small_year, unix_time
 from 	textwrap 			import 	shorten
+import 	Screenshoter
 import 	traceback
 import 	datetime
 import 	logging
@@ -68,8 +69,38 @@ smaller_lesson_names = {
 }
 
 UPTIME = unix_time()
+WHITELIST = load_data("Whitelist.json")
 
-@dp.message_handler(commands = ["start", "start", "старт",])
+# Whitelist
+@dp.message_handler(lambda msg: not (msg.from_user.id in WHITELIST or msg.from_user.username in WHITELIST))
+async def non_whitelisted_handler(msg: types.Message):
+	if not msg.is_command():
+		return
+	full_user_name = f"{msg.from_user.first_name} {msg.from_user.last_name}"
+
+	logger.info(f"Стучится юзер '{full_user_name}' с ID: {msg.from_user.id}, никнеймом: {msg.from_user.username}")
+	await msg.answer("Нет доступа.")
+	await bot.send_message(os.environ["ADMIN_TELEGRAM_ID"], f"🗒 Не в белом списке: <code>{full_user_name}</code>, с ID: <code>{msg.from_user.id}</code>, никнеймом: <code>{msg.from_user.username}</code>.\nКоманда для добавления: <code>/add {msg.from_user.username}</code>", disable_notification=True)
+
+@dp.message_handler(lambda msg: str(msg.from_user.id) == os.environ["ADMIN_TELEGRAM_ID"], commands = ["add"])
+async def add_to_whitelist_handler(msg: types.Message):
+	global WHITELIST
+
+	old_list = load_data("Whitelist.json")
+	arguments = msg.get_args().split(" ")
+	if len(arguments) != 1 or arguments[0] == "":
+		await msg.answer(f"<code>/add username</code> или <code>/add telegram_user_id</code>")
+		
+		return
+
+	if not arguments[0] in old_list:
+		old_list.append(arguments[0])
+		save_data(old_list, "Whitelist.json")
+		WHITELIST = old_list
+
+	await msg.answer(f"Успешно добавил.\nНовый лист: {', '.join([('<code>' + str(i) + '</code>') for i in old_list])}.")
+
+@dp.message_handler(commands = ["start", "start", "старт"])
 async def message_handler(msg: types.Message):
 	#У бота есть <a href='https://github.com/Zensonaton/ZensonatonTools_TGBot'>открытый исходный код</a>, поэтому ты можешь проверить что он делает 'за кулисами'.
 	await msg.answer(
@@ -150,11 +181,11 @@ async def schedule_handler(msg: types.Message):
 	dateWasGiven = False
 	if len(arguments) == 1 and arguments[0] != "":
 		try:
-			schedule_date_dt = datetime.datetime.strptime(arguments[0], "%d.%m.%y")
-			schedule_date = schedule_date_dt.strftime("%d.%m.%Y") # Превращаем "1.2.33" в "1.2.3333"
+			schedule_date = convert_datetime_to_string(parse_date_as_string(arguments[0]))
 			dateWasGiven = True
 		except ValueError:
-			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты 👀.\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date_small_year()}</code>.")
+			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты. 👀\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date_small_year()}</code>.")
+			
 			return
 
 	try:
@@ -177,7 +208,8 @@ async def schedule_handler(msg: types.Message):
 
 	# Проверяем, есть ли у нас уроки в указанный день.
 	if len(full_schedule["days"][schedule_date]["schedule"]) == 0:
-		await msg.answer_video("BAACAgIAAxkBAAIIPmHrijfK_J-iksoe4ebNUkPl1jzzAALIEgACeJ5ZS9mS95ZUO8wAASME") # ;)
+		await msg.answer_video("BAACAgIAAxkBAAIIPmHrijfK_J-iksoe4ebNUkPl1jzzAALIEgACeJ5ZS9mS95ZUO8wAASME") 
+		# ;)
 
 		return
 
@@ -195,6 +227,173 @@ async def schedule_handler(msg: types.Message):
 		reply_markup=sched_keyboard,
 		disable_web_page_preview=True
 	)
+
+@dp.message_handler(commands = ["debug", "test"])
+async def debug_handler(msg: types.Message):
+	# await msg.answer_photo("AgACAgIAAxkDAAOFYff7xTXsYpkIW3qrHvfa5cjlS5wAAiO4MRsGeMFLvs0GzDt8jJcBAAMCAANzAAMjBA")
+	pass
+
+@dp.message_handler(commands = ["screenshots", "screenshot", "ss", "скриншоты", "скриншот"])
+async def screenshots_handler(msg: types.Message):
+	user_data = load_data(f"User-{msg.from_user.id}.json")
+	male = user_data["Male"]
+
+	schedule_date = today_date()
+	arguments = msg.get_args().split(" ")
+	dateWasGiven = False
+	if len(arguments) == 1 and arguments[0] != "":
+		try:
+			schedule_date = convert_datetime_to_string(parse_date_as_string(arguments[0]))
+			dateWasGiven = True
+		except ValueError:
+			await msg.answer(f"<i>Упс</i>, ты {'использовал' if user_data['Male'] else 'использовала'} неверный формат даты. 👀\n\nℹ️ Правильный формат даты: <code>дд.мм.гг</code>.\nПример сегодняшней даты: <code>{today_date_small_year()}</code>.")
+			
+			return
+
+	try:
+		full_schedule = await _BL.get_schedule(
+			user_data, user_data["Token"], schedule_date)
+	except:
+		await msg.answer_sticker("CAACAgEAAxkBAAEDEzthZ-PBNrIKxd1YItQmcTItwNi1VwACcIMAAq8ZYgfAbLJhK3qxuiEE")
+
+		await msg.answer("<i>Упс</i>, что-то пошло не так, и система авторизации сломалась 😨\n\nПопробуй авторизоваться снова, ведь я специально де-авторизовал тебя из системы. Это можно сделать, введя команду <code>/login логин пароль</code>.\nЕсли проблема продолжается, то сообщи об этом создателю бота, прописав команду /feedback.")
+		del user_data["Token"]
+		save_data(user_data, f"User-{msg.from_user.id}.json")
+
+		return
+
+	# Проверяем, есть ли указанная дата в расписании.
+	if schedule_date not in full_schedule["days"]:
+		await msg.answer(f"<i>Упс!</i> {'Похоже, что я' if dateWasGiven else 'Я'} столкнулся с внутренней ошибкой, связанной с расписанием. {'Вероятнее всего, это произошло из за даты, которую ты ввёл<i>(-а)</i>, либо же это произошло из-за бага, что' if dateWasGiven else 'Этот баг'} мне известен, он будет исправлен позже. А сейчас, ты можешь лишь подождать <code>00:00</code>, а ещё будет лучше попробовать снова завтра днём!")
+
+		return
+
+	# Проверяем, есть ли у нас уроки в указанный день.
+	if len(full_schedule["days"][schedule_date]["schedule"]) == 0:
+		await msg.answer_video("BAACAgIAAxkBAAIIPmHrijfK_J-iksoe4ebNUkPl1jzzAALIEgACeJ5ZS9mS95ZUO8wAASME") 
+		# ;)
+
+		return
+
+	# Проверка, выключен ли урок?
+	if full_schedule["days"][schedule_date]["isDisabledWeek"]:
+		await msg.answer(f"😔 Увы, но дата <code>{schedule_date}</code> временно недоступна в самом Bilimland, попробуй позже!")
+
+		return
+
+	day_schedule = full_schedule["days"][schedule_date]
+	completed_lessons = [i for i in day_schedule["schedule"] if i["lesson"]["score"] is not None]
+
+	# Проверяем, есть ли хотя бы один завершённый урок.
+	if len(completed_lessons) == 0:
+		await msg.answer(f"<i>Ой!</i> Похоже, что ты ещё не выполнил{'' if male else 'а'} ни один урок на сегодня. 👀\nВыполни уроки, и пропиши эту команду снова что бы я сумел сделать красивые скриншоты!\n\n🤔 Если ты на самом деле выполнил{'' if male else 'а'} работу, но я дальше буду упрямиться и отказываться работать, то подожди 5-10 минут перед повторным использованием этой команды: Увы, у Bilimland'а есть баг, из-за которого он не сразу обновляет оценки за уроки :(")
+
+		return
+
+	inform_message = await msg.answer(f"Отлично, я увидел в твоём расписании {int_to_emojis(len(completed_lessons))} выполненных уроков! 😌\n\nА теперь, пожалуйста, подожди перед тем, как я отправлю тебе скриншоты.\nК сожалению, этот процесс и вправду долгий, и <b>он может занять от 40 секунд до 2 минут! Это время полностью зависит от количества скриншотов, которое бот должен будет сделать.</b> 😕")
+
+	# Устанавливаем браузер.
+	driver = None
+	lessons_count = {}
+
+	try:
+		TEMP_BROWSER_DIRECTORY = os.path.join(os.getcwd(), "temp-browser")
+		driver = Screenshoter.setup_firefox_browser(user_data["Token"], user_data["Refresh-Token"], temp_dir=TEMP_BROWSER_DIRECTORY, headless=PROD)
+		
+		# Браузер установлен, проходим по всем урокам.
+		for lesson in completed_lessons:
+			bot_data = load_data("Bot.json")
+
+			# Для начала проверяем, существует ли скриншот этого урока в кэше:
+			if lesson["scheduleId"] in bot_data.get("LessonScreenshots", {}):
+				# Такой урок есть. Так что мы просто берём, и выходим из цикла.
+				lesson.update({
+					"screenshotPhotoIDs": bot_data["LessonScreenshots"][lesson["scheduleId"]]
+				})
+
+				continue
+
+			LESSON_DIR = os.path.join(TEMP_BROWSER_DIRECTORY, "lesson-screenshots", lesson['scheduleId'])
+			lesson_url = f"https://onlinemektep.net/schedule/{schedule_date}/lesson/{lesson['scheduleId']}"
+
+			count = lessons_count.get(lesson["subject"]["subjectId"], 0) + 1
+			lessons_count.update({
+				lesson["subject"]["subjectId"]: count
+			})
+			lesson.update({
+				"count": count
+			})
+
+			if os.path.exists(LESSON_DIR):
+				# Скриншоты урока уже были созданы, поэтому выходим
+				lesson.update({
+					"screenshots": [os.path.join(LESSON_DIR, i) for i in os.listdir(LESSON_DIR) if not "Main.png" in i and os.path.isfile(os.path.join(LESSON_DIR, i))]
+				})
+
+				continue
+
+			os.makedirs(LESSON_DIR, exist_ok=True)
+
+			lessonScreenshots = Screenshoter.get_lesson_screenshots(driver, lesson_url, LESSON_DIR)
+
+			lesson.update({
+				"screenshots": lessonScreenshots
+			})
+
+		# Скриншоты готовы, теперь их стоит отправить.
+		for lesson in completed_lessons:
+			media = MediaGroup()
+			numOfScreenshots = len(lesson.get("screenshots", []))
+			are_photo_cached = False
+			# // TODO: Добавить стату.
+
+			# Если у нас есть "screenshotPhotoIDs" в lesson, то мы должны использовать их:
+			if "screenshotPhotoIDs" in lesson:
+				are_photo_cached = True
+				numOfScreenshots = len(lesson.get("screenshotPhotoIDs", []))
+
+				for index, screenshotID in enumerate(lesson["screenshotPhotoIDs"]):
+					media.attach_photo(
+						screenshotID,
+						
+						f"Задание №<code>{index+1}</code> из <code>{numOfScreenshots}</code>, взятое с урока <b><i>«{lesson['subject']['label']}»</i></b>, на дату <code>{schedule_date}</code>.\n<i>кэшированное</i>"
+					)
+			else:
+				for index, screenshotPath in enumerate(lesson["screenshots"]):
+					media.attach_photo(
+						InputFile(
+							screenshotPath
+						),
+
+						f"Задание №<code>{index+1}</code> из <code>{numOfScreenshots}</code>, взятое с урока <b><i>«{lesson['subject']['label']}»</i></b>, на дату <code>{schedule_date}</code>."
+					)
+
+			await msg.answer(f"<code>[{schedule_date}]</code> <b>{lesson['subject']['label']}</b>{(' <b>(' + str(lesson['count']) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}: <i>«{lesson['theme']['label']}»</i> #бл")
+			res_messages_list = await bot.send_media_group(msg.chat.id, media, disable_notification=True)
+
+			if not are_photo_cached:
+				# Сохраняем ID фото для последующего использования.
+				bot_data = load_data("Bot.json")
+				saved_lesson_screenshots_photo_ids = bot_data.get("LessonScreenshots", {})
+				if not lesson["scheduleId"] in saved_lesson_screenshots_photo_ids:
+					saved_lesson_screenshots_photo_ids.update({
+						lesson["scheduleId"]: []
+					})
+
+				for message_sent in res_messages_list:
+					photo = message_sent["photo"][-1]
+
+					if not photo["file_id"] in saved_lesson_screenshots_photo_ids[lesson["scheduleId"]]:
+						saved_lesson_screenshots_photo_ids[lesson["scheduleId"]].append(photo["file_id"])
+
+				bot_data.update({"LessonScreenshots": saved_lesson_screenshots_photo_ids})
+				save_data(bot_data, "Bot.json")
+				await asyncio.sleep(2 if are_photo_cached else 5)
+
+		await inform_message.delete()
+		
+	finally:
+		driver.close()
 
 async def generate_schedule_string(msg: types.Message, full_schedule: dict, schedule_date: str, date_was_chosen_by_user: bool = False, user_access_token: None | str = None, smaller_version: bool = True) -> Tuple[str, types.InlineKeyboardMarkup]:
 	keys = []

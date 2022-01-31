@@ -282,3 +282,15 @@ def seconds_to_userfriendly_string(seconds, max=2, minutes=True, hours=True, day
 		else:
 			break
 	return ", ".join(newStr)
+
+def parse_date_as_string(date_string: str) -> datetime:
+	"""Парсит `date_string` в формате дд.мм.гг 
+
+	Args:
+		date_string (str): Строка с датой.
+	"""
+
+	return datetime.strptime(date_string, "%d.%m.%y")
+
+def convert_datetime_to_string(datetime_obj: datetime) -> str:
+	return datetime_obj.strftime("%d.%m.%Y") # Превращаем "1.2.33" в "1.2.3333"
