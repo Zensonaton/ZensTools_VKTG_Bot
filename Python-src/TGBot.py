@@ -424,12 +424,14 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 			lesson['subject']['label'], lesson['subject']['label'])
 		lesson_name_full = lesson['subject']['label']
 
-		# Проверяем, есть ли URL к скачанному уроку.
-		if lesson["scheduleId"] not in bot_data["DecodedLessonURLs"]:
+		# Проверяем, есть ли URL к скачанному уроку. В unique_lesson_id мы создаём строку с уникальным идентификатором урока, который будет использоваться для поиска его в базе данных.
+		unique_lesson_id = f"{lesson['scheduleId']}_{msg.from_user.id}"
+
+		if unique_lesson_id not in bot_data["DecodedLessonURLs"]:
 			# URL к текущему уроку нету, закачиваем.
 
 			# Получаем LessonID
-			lesson_info = await BL.get_lesson_info(user_data, user_data["Token"], lesson["scheduleId"])
+			lesson_info = await BL.get_lesson_info(user_data, user_data["Token"], unique_lesson_id)
 
 			# Получаем index.json
 			index_json_url: Any = await BL.get_lesson_answers_link(
@@ -445,7 +447,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 			while retries > 0:
 				try:
 					# Декодируем URL
-					lesson_decoded_url = await _BL.decode_url(lesson_downloaded, lesson["scheduleId"])
+					lesson_decoded_url = await _BL.decode_url(lesson_downloaded, unique_lesson_id)
 
 					# Проверяем, нету ли ошибки:
 					if "Something went wrong :-(" in lesson_decoded_url:
@@ -469,12 +471,12 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 					
 
 			# Сохраняем URL
-			bot_data["DecodedLessonURLs"][lesson["scheduleId"]] = lesson_decoded_url
+			bot_data["DecodedLessonURLs"][unique_lesson_id] = lesson_decoded_url
 
 			# Статистика:
 			bot_data["LessonsAnalyzed"] += 1
 
-		decoded_url = bot_data["DecodedLessonURLs"][lesson["scheduleId"]]
+		decoded_url = bot_data["DecodedLessonURLs"][unique_lesson_id]
 		broken_url = "Something went wrong :-(" in decoded_url
 
 		if broken_url:
@@ -501,7 +503,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 				f"[{index + 1}] ОШИБКА", callback_data="error-button"))
 
 			# Удаляем сломанный URL:
-			del bot_data["DecodedLessonURLs"][lesson["scheduleId"]]
+			del bot_data["DecodedLessonURLs"][unique_lesson_id]
 
 			
 
