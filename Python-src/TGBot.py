@@ -12,7 +12,7 @@ import 	aiohttp
 from    dotenv              import 	load_dotenv
 import 	BL_Utils			as _BL
 import 	BL_AutoParser		as BL	
-from 	Utils 				import 	convert_datetime_to_string, int_to_emojis, load_data, parse_date_as_string, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_small_year, unix_time
+from 	Utils 				import 	convert_datetime_to_string, int_to_emojis, load_data, parse_date_as_string, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_as_local_string, today_date_small_year, unix_time
 from 	textwrap 			import 	shorten
 import 	Screenshoter
 import 	traceback
@@ -345,6 +345,7 @@ async def screenshots_handler(msg: types.Message):
 			media = MediaGroup()
 			numOfScreenshots = len(lesson.get("screenshots", []))
 			are_photo_cached = False
+			lesson_url = f"https://onlinemektep.net/schedule/{schedule_date}/lesson/{lesson['scheduleId']}"
 			# // TODO: Добавить стату.
 
 			# Если у нас есть "screenshotPhotoIDs" в lesson, то мы должны использовать их:
@@ -368,7 +369,8 @@ async def screenshots_handler(msg: types.Message):
 						f"Задание №<code>{index+1}</code> из <code>{numOfScreenshots}</code>, взятое с урока <b><i>«{lesson['subject']['label']}»</i></b>, на дату <code>{schedule_date}</code>."
 					)
 
-			await msg.answer(f"<code>[{schedule_date}]</code> <b>{lesson['subject']['label']}</b>{(' <b>(' + str(lesson['count']) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}: <i>«{lesson['theme']['label']}»</i> #бл")
+			# await msg.answer(f"<code>[{schedule_date}]</code> <b>{lesson['subject']['label']}</b>{(' <b>(' + str(lesson['count']) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}: <i>«{lesson['theme']['label']}»</i> #бл")
+			await msg.answer(f"#бл <a href=\"{lesson_url}\"><b><u>{lesson['subject']['label'][0]}</u>{lesson['subject']['label'][1:]}</b></a>{(' <b>(' + str(lesson['count']) + '/' + str(lessons_count[lesson['subject']['subjectId']]) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}, <b>{today_date()}</b>: <i>«{lesson['theme']['label']}»</i>.")
 			res_messages_list = await bot.send_media_group(msg.chat.id, media, disable_notification=True)
 
 			if not are_photo_cached:

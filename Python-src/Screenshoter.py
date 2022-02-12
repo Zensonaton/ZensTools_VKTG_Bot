@@ -36,6 +36,8 @@ class DriverStrings:
 	LESSON_QUESTION_XPATH  = "/html/body/div/div[1]/div/div[4]/div/div[2]/div[1]/div/div/div/div/div/div/div/div[1]/div[2]/div[3]/div[{}]" # Starts from 2
 	QUESTION_SCREENSHOT_BODY_XPATH = "/html/body/div/div[1]/div/div[4]/div/div[2]/div[1]/div/div/div/div/div/div/div/div[3]/div"
 	LESSON_QUESTION_IS_CORRECT_XPATH = "/html/body/div/div[1]/div/div[4]/div/div[2]/div[1]/div/div/div/div/div/div/div/div[3]/div/div[1]"
+	IS_LESSON_COLLAPSED_XPATH = "/html/body/div/div[1]/div/div[4]/div/div[2]/div[1]/div/div/div/div/div/div/div/div[1]"
+	OPEN_COLLAPSED_LESSON_XPATH = "/html/body/div/div[1]/div/div[4]/div/div[2]/div[1]/div/div/div/div/div/div/div/div[1]/span"
 
 	HINT_SUCCESS_JS = "document.getElementsByClassName(\"bllp-adapt-hints__wrapper\")[0].style.display = \"none\";"
 	FIX_ANSWER_SCREENSHOT_SIZE_JS = "document.getElementsByClassName(\"bllp-box-body\")[0].style.flex = 0;"
@@ -129,6 +131,13 @@ def get_lesson_screenshots(driver: webdriver.Firefox, lesson_url: str, output_di
 	# Прячем всякий шлак, по типу надписи "молодец хуй пизда 100% баллов партия тобой довольна", а так же прячем чувствительную инфу.
 	driver.execute_script(DriverStrings.FIX_ANSWER_SCREENSHOT_SIZE_JS)
 	driver.execute_script(DriverStrings.HIDE_SENSITIVE_INFO_JS)
+
+	# Проверяем, свёрнута ли боковая панель?
+	sidepanel = driver.find_element_by_xpath(DriverStrings.IS_LESSON_COLLAPSED_XPATH)
+	sidepanel_property = sidepanel.get_attribute("data-collapsed") 
+
+	if sidepanel_property is not None:
+		driver.find_element_by_xpath(DriverStrings.OPEN_COLLAPSED_LESSON_XPATH).click()
 
 	# Создаём скриншот после загрузки сайта. Почему бы и нет? :глаза:
 	driver.get_screenshot_as_file(os.path.join(output_dir, "Main.png"))

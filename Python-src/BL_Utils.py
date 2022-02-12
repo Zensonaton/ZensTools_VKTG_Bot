@@ -182,7 +182,8 @@ async def get_schedule(user_data, token: str, schedule_date: str):
 	async with aiohttp.ClientSession() as session:
 		async with session.get(URL, headers={
 			"Authorization": f"Bearer {token}",
-			"X-Localization": "ru"
+			"X-Localization": "ru",
+			"Cache-Control": "no-cache"
 		}) as response:
 			if response.status == 426 or response.content_type == "text/html":
 				raise TokenHasBeenExpired("Токен истёк.")

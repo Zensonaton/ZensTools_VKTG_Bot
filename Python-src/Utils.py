@@ -294,3 +294,6 @@ def parse_date_as_string(date_string: str) -> datetime:
 
 def convert_datetime_to_string(datetime_obj: datetime) -> str:
 	return datetime_obj.strftime("%d.%m.%Y") # Превращаем "1.2.33" в "1.2.3333"
+
+def today_date_as_local_string() -> str:
+	return datetime.now().strftime("%d %B")
