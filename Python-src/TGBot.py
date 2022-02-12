@@ -430,7 +430,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 			# URL к текущему уроку нету, закачиваем.
 
 			# Получаем LessonID
-			lesson_info = await BL.get_lesson_info(user_data, user_data["Token"], unique_lesson_id)
+			lesson_info = await BL.get_lesson_info(user_data, user_data["Token"], lesson["scheduleId"])
 
 			# Получаем index.json
 			index_json_url: Any = await BL.get_lesson_answers_link(

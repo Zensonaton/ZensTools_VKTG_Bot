@@ -352,7 +352,7 @@ async def get_lesson_info(userData: dict, token: str, schedule_id: str):
 		async with session.get(URL, headers={
 			"Authorization": f"Bearer {token}",
 			"X-Localization": "ru",
-			"X-Quarter": "20221",
+			"X-Quarter": "20213",
 			"User-Agent": random_useragent()
 		}) as response:
 			if response.status != 200:
