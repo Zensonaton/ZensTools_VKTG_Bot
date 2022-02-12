@@ -369,7 +369,6 @@ async def screenshots_handler(msg: types.Message):
 						f"Задание №<code>{index+1}</code> из <code>{numOfScreenshots}</code>, взятое с урока <b><i>«{lesson['subject']['label']}»</i></b>, на дату <code>{schedule_date}</code>."
 					)
 
-			# await msg.answer(f"<code>[{schedule_date}]</code> <b>{lesson['subject']['label']}</b>{(' <b>(' + str(lesson['count']) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}: <i>«{lesson['theme']['label']}»</i> #бл")
 			await msg.answer(f"#бл <a href=\"{lesson_url}\"><b><u>{lesson['subject']['label'][0]}</u>{lesson['subject']['label'][1:]}</b></a>{(' <b>(' + str(lesson['count']) + '/' + str(lessons_count[lesson['subject']['subjectId']]) + ')</b>') if lessons_count.get(lesson['subject']['subjectId'], 0) > 1 else ''}, <b>{today_date()}</b>: <i>«{lesson['theme']['label']}»</i>.")
 			res_messages_list = await bot.send_media_group(msg.chat.id, media, disable_notification=True)
 
