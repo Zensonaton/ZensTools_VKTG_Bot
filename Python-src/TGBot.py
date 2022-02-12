@@ -69,10 +69,10 @@ smaller_lesson_names = {
 }
 
 UPTIME = unix_time()
-WHITELIST = load_data("Whitelist.json")
+WHITELIST = [str(i) for i in load_data("Whitelist.json")]
 
 # Whitelist
-@dp.message_handler(lambda msg: not (msg.from_user.id in WHITELIST or msg.from_user.username in WHITELIST))
+@dp.message_handler(lambda msg: not (str(msg.from_user.id) in WHITELIST or msg.from_user.username in WHITELIST))
 async def non_whitelisted_handler(msg: types.Message):
 	if not msg.is_command():
 		return
@@ -80,7 +80,7 @@ async def non_whitelisted_handler(msg: types.Message):
 
 	logger.info(f"Стучится юзер '{full_user_name}' с ID: {msg.from_user.id}, никнеймом: {msg.from_user.username}")
 	await msg.answer("Нет доступа.")
-	await bot.send_message(os.environ["ADMIN_TELEGRAM_ID"], f"🗒 Не в белом списке: <code>{full_user_name}</code>, с ID: <code>{msg.from_user.id}</code>, никнеймом: <code>{msg.from_user.username}</code>.\nКоманда для добавления: <code>/add {msg.from_user.username}</code>", disable_notification=True)
+	await bot.send_message(os.environ["ADMIN_TELEGRAM_ID"], f"🗒 Не в белом списке: <code>{full_user_name}</code>, с ID: <code>{msg.from_user.id}</code>, никнеймом: <code>{msg.from_user.username}</code>.\nКоманда для добавления: <code>/add {msg.from_user.username or msg.from_user.id}</code>", disable_notification=True)
 
 @dp.message_handler(lambda msg: str(msg.from_user.id) == os.environ["ADMIN_TELEGRAM_ID"], commands = ["add"])
 async def add_to_whitelist_handler(msg: types.Message):
