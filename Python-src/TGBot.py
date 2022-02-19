@@ -10,6 +10,7 @@ from 	aiogram.types 		import 	ReplyKeyboardRemove, \
 									InlineKeyboardMarkup, InlineKeyboardButton, Update, MediaGroup, InputFile, InputMedia
 import 	aiohttp
 from    dotenv              import 	load_dotenv
+import pgpy
 import 	BL_Utils			as _BL
 import 	BL_AutoParser		as BL	
 from 	Utils 				import 	convert_datetime_to_string, int_to_emojis, load_data, parse_date_as_string, random_uuid, save_data, seconds_to_userfriendly_string, today_date, today_date_as_local_string, today_date_small_year, unix_time
@@ -525,6 +526,31 @@ async def feedback(msg: types.Message):
 	male = user_data.get("Male", True)
 
 	await msg.answer(f"Обратиться к администратору можно, если написать ему напрямую: @Zensonaton.\n\nЕсли ты столкнул{'ся' if male else 'ась'} с проблемой, то перешли это сообщение, так как администратор сможет быстрее разобраться в чём проблема благодаря следующему ID: <span class=\"tg-spoiler\">{msg.from_user.id}</span>")
+
+@dp.message_handler(content_types=types.ContentType.DOCUMENT)
+async def document_handler(msg: types.Message):
+	os.makedirs("temp", exist_ok = True)
+
+	await msg.document.download(destination_file=f"temp/{msg.document.file_id}.enc")
+	fileContents = open(f"temp/{msg.document.file_id}.enc", "r").read()
+
+	emsg   = pgpy.PGPMessage.from_blob(fileContents)
+	key, _ = pgpy.PGPKey.from_blob('''-----BEGIN PGP PRIVATE KEY BLOCK-----\n\n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\n=o/Oc\n-----END PGP PRIVATE KEY BLOCK-----''')
+
+	with key.unlock("u11z0ccR8dRDHrx9nkYE"):
+		decoded = key.decrypt(emsg).message.decode("utf8")
+
+		open(f"temp/{msg.document.file_id}.dec.json", "w").write(decoded)
+
+		try:
+			parsedData = await BL.parse_lesson_answers(json.loads(decoded))
+
+			open(f"temp/{msg.document.file_id}.parsed.json", "w").write(json.dumps(parsedData, ensure_ascii=False, indent=4))
+		except:
+			pass
+
+	await msg.answer_document(types.InputFile(f"temp/{msg.document.file_id}.dec.json", filename="decoded.json"), caption="Держи декодированный файл!")
+	
 
 @dp.errors_handler()
 async def global_error_handler(update: Update, error: Exception):
