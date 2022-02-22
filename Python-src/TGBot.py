@@ -558,7 +558,7 @@ async def broadcast_handler(msg: types.Message):
 	sent = 0
 	for userID in user_ids:
 		try:
-			await bot.send_message(msg.from_user.id, msg.html_text.replace("/broadcast", ""), disable_notification=True)
+			await bot.send_message(int(userID), msg.html_text.replace("/broadcast", ""), disable_notification=True)
 			sent += 1
 		except:
 			await msg.answer(f"Я не сумел отправить сообщению пользователю с ID <code>{userID}</code>.")
