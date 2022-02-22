@@ -425,7 +425,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 		lesson_name_full = lesson['subject']['label']
 
 		# Проверяем, есть ли URL к скачанному уроку. В unique_lesson_id мы создаём строку с уникальным идентификатором урока, который будет использоваться для поиска его в базе данных.
-		unique_lesson_id = f"{lesson['scheduleId']}_{msg.from_user.id}"
+		unique_lesson_id = f"{lesson['scheduleId']}_{user_data['BilimlandID']}"
 
 		if unique_lesson_id not in bot_data["DecodedLessonURLs"]:
 			# URL к текущему уроку нету, закачиваем.
@@ -550,7 +550,20 @@ async def document_handler(msg: types.Message):
 			pass
 
 	await msg.answer_document(types.InputFile(f"temp/{msg.document.file_id}.dec.json", filename="decoded.json"), caption="Держи декодированный файл!")
-	
+
+@dp.message_handler(lambda msg: str(msg.from_user.id) == os.environ["ADMIN_TELEGRAM_ID"], commands=["broadcast"])
+async def broadcast_handler(msg: types.Message):
+	user_ids = [load_data(i)["ID"] for i in os.listdir("Data") if i.startswith("User")]
+
+	sent = 0
+	for userID in user_ids:
+		try:
+			await bot.send_message(msg.from_user.id, msg.html_text.replace("/broadcast", ""), disable_notification=True)
+			sent += 1
+		except:
+			await msg.answer(f"Я не сумел отправить сообщению пользователю с ID <code>{userID}</code>.")
+
+	await msg.answer(f"Успех! Сообщения были отправлены <code>{sent}</code>/<code>{len(user_ids)}</code> юзерам.")
 
 @dp.errors_handler()
 async def global_error_handler(update: Update, error: Exception):
