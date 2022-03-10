@@ -406,8 +406,6 @@ async def get_lesson_answers_file(lesson_index_file_url: str, secure_token: str 
 	async with aiohttp.ClientSession() as session:
 		async with session.get(lesson_index_file_url, headers = headers) as response:
 			if response.status != 200:
-				print(await response.text())
-
 				raise Exception(f"Error {response.status}. This can happen because Bilimland does not allow getting index.json file without sending other requests.")
 
 			return await response.text()
@@ -844,8 +842,6 @@ async def get_lesson_state(lesson_id: int, user_id: int, teacher_user_id: int | 
 	async with aiohttp.ClientSession() as session:
 		async with session.get(URL) as response:
 			if response.status != 200:
-				print(await response.text())
-
 				raise LessonIsEmpty(f"Lesson does not exist, send data by yourself")
 				
 			return await response.json()
@@ -920,8 +916,6 @@ async def send_lesson_new_state(userData: dict, token: str, new_data: dict, less
 		async with session.post(URL, data = to_b64_str(json.dumps(new_data, ensure_ascii=False)), headers={
 			"Authorization": token
 		}) as response:
-			print(await response.text())
-
 			if (await response.json())["status"] == "duplicate" and not ignore_duplicate:
 				raise Exception("Duplicate found.")
 
@@ -1023,90 +1017,3 @@ async def send_store_state(userData: dict, token: str, final_store_state: dict):
 				raise Exception(f"Error {response.status}. Probably token has been expired?")
 
 			return await response.json()
-
-async def main():
-	DAY_INDEX = 0		# // TODO
-	LESSON_INDEX = 0	# // TODO
-
-	startTime = int(time.time())
-
-	# Получаем инфу о пользователе.
-	user_info = await get_user_data()
-
-	# Получаем полное расписание.
-	schedule = await get_schedule()
-	
-	# Получаем неполную инфу (инфу с расписания) о уроке.
-	lesson = schedule["days"][DAY_INDEX]["schedule"][LESSON_INDEX]
-
-	# Получаем "расширенную" информацию о уроке.
-	lesson_extended_info = await get_lesson_info(lesson["scheduleId"])
-
-	# Объеденяем неполную, и полную информацию о уроке.
-	lesson_merged = merge(lesson, lesson_extended_info["data"])
-	del lesson, lesson_extended_info
-
-	# Получаем Bearer-токен для получения доступа к index.json, который находится на другой неделе. // TODO: Сделать проверку, находится ли урок на другой неделе (дне?) или нет, если да, то только в таком случае делать этот запрос.
-	lesson_access = await get_lesson_access(lesson_merged["lessonId"])
-
-	# Получаем ссылку на index.json.
-	lesson_answers_url = await get_lesson_answers_link(lesson_merged["lessonId"])
-
-	# Получаем содержимое файла index.json. Важно помнить, что этот файл зашифрован PGP-ключом.
-	lesson_answers_file = await get_lesson_answers_file(lesson_answers_url, lesson_access["data"]["jwt"])
-
-	# Тут мы дешифровываем содержимое файла.
-	lesson_answers_decoded = await decode_lesson_answers_file(lesson_answers_file)
-
-	# Парсим содержимое. Самый трудный процесс.
-	lesson_answers_parsed = await parse_lesson_answers(lesson_answers_decoded)
-
-	lesson_state = {}
-	try:
-		# Проверяем, пуст ли урок. // TODO: Проверять другим образом. (finished_<HASH>)
-
-		# Получаем содержимое.
-		lesson_state = await get_lesson_state(lesson_merged["lessonId"], user_info["data"]["userId"])
-	except LessonIsEmpty:
-		# Если мы получаем эту ошибку, то вероятнее всего, урок пуст, и мы должны сами отправить содержимое.
-
-		# Создаём пустое содержимое для запроса.
-		new_lesson_data = await generate_lesson_state_post_content(lesson_answers_parsed, lesson_merged, user_info)
-
-		# Добавляем конспект. На самом деле, эта функция добавляет не конспект, а выполненный урок, однако, в данном случае мы можем добавить именно конспект.
-		new_lesson_state_data = await add_answer_to_state(new_lesson_data, lesson_answers_parsed)
-
-		# Отправляем данные на сервер Bilimland, что бы он их сохранил.
-		lesson_state_change_response = await send_lesson_new_state(new_lesson_data, lesson_merged["lessonId"], user_info["data"]["userId"])
-
-		lesson_state = new_lesson_state_data
-
-	try:
-		for i in range(8):
-			# Выполняем все 8 уроков. // TODO: Добавить проверку, что бот выполнил все уроки.
-
-			# Добавляем 1 ответ.
-			lesson_state = await add_answer_to_state(lesson_state, lesson_answers_parsed)
-
-			# Отправляем данные на сервер Bilimland, что бы он их сохранил.
-			lesson_new_state_response = await send_lesson_new_state(lesson_state, lesson_merged["lessonId"], user_info["data"]["userId"], ignore_duplicate=True)
-	except:
-		print("Случилась ошибка. либо же я дошёл до конца. Конец")
-
-	print("Отправляю последний запрос...")
-
-	# Изменяем слегка данные, что бы Bilimland считал, что все уроки выполнены.
-	final_lesson_state = await mark_lesson_state_as_complete(lesson_state)
-
-	# Так же делаем данные для store-запроса.
-	# final_lesson_store_state = await modify_lesson_state_for_final_store(final_lesson_state)
-
-	# post STORE
-	# final_store_result = await send_store_state(final_lesson_store_state)
-	# save(final_store_result, save_name="Final Store Result")
-
-	# Отправляем данные на сервер Bilimland, что бы он их сохранил.
-	lesson_new_state_response = await send_lesson_new_state(final_lesson_state, lesson_merged["lessonId"], user_info["data"]["userId"], ignore_duplicate=True)
-
-	print("Конец.")
-	print(f"Времени заняло: {int(time.time()) - startTime} секунд")
