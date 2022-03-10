@@ -504,15 +504,11 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 
 			# Удаляем сломанный URL:
 			del bot_data["DecodedLessonURLs"][unique_lesson_id]
-
-			
-
 		
 
 	lessons_list += "."
 
 	keyboard.add(*keys)
-	# keyboard.add(InlineKeyboardButton("Выбрать другой день этой недели", callback_data = "a"))
 	save_data(user_data, f"User-{msg.from_user.id}.json")
 	save_data(bot_data, "Bot.json")
 	if notification_msg is not None:
