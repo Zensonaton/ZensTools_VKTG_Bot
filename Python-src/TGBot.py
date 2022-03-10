@@ -590,4 +590,4 @@ if __name__ == "__main__":
 			"TokensGotRefreshed": 0
 		}, "Bot.json")
 
-	executor.start_polling(dp, on_startup=logger.info("Бот запущен!"))
+	executor.start_polling(dp, on_startup=logger.info("Бот запущен!"), skip_updates=True)
