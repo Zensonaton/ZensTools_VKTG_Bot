@@ -380,16 +380,21 @@ async def get_lesson_access(userData: dict, token: str, lesson_id: int):
 
 			return await response.json()
 
-async def get_lesson_answers_link(lesson_id: int | str):
-	URL = "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
+async def get_lesson_answers_link(lesson_id: int | str, is_a_summative: bool = False):
+	URL = "https://onlinemektep.net/upload/files/sor/q20213/{}/index.json" if is_a_summative else "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
 
 	if isinstance(lesson_id, int):
 		lesson_id = f"L_{lesson_id}"
 
-	# MD5(MD5("L_123456"))
-	lesson_hash = toMD5(toMD5(lesson_id))
+	if is_a_summative:
+		# Дан СОР/СОЧ.
 
-	return URL.format(lesson_hash)
+		return URL.format(lesson_id)
+	else:
+		# Дан обычный урок.
+		lesson_hash = toMD5(toMD5(lesson_id)) # MD5(MD5("L_123456"))
+
+		return URL.format(lesson_hash)
 
 async def get_lesson_answers_file(lesson_index_file_url: str, secure_token: str = None):
 	headers = {}

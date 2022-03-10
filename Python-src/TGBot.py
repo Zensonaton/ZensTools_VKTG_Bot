@@ -225,7 +225,6 @@ async def schedule_handler(msg: types.Message):
 
 @dp.message_handler(commands = ["debug", "test"])
 async def debug_handler(msg: types.Message):
-	# await msg.answer_photo("AgACAgIAAxkDAAOFYff7xTXsYpkIW3qrHvfa5cjlS5wAAiO4MRsGeMFLvs0GzDt8jJcBAAMCAANzAAMjBA")
 	pass
 
 @dp.message_handler(commands = ["screenshots", "screenshot", "ss", "скриншоты", "скриншот"])
@@ -414,9 +413,13 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 		score = lesson['lesson']['score'] or 0
 		score = round((score / 10) * 100)
 
+		# Проверяем, СОР/СОЧ ли это:
+		is_a_summative = lesson["type"] != "regular"
+
 		lesson_name = smaller_lesson_names.get(
 			lesson['subject']['label'], lesson['subject']['label'])
 		lesson_name_full = lesson['subject']['label']
+		lesson_name_with_sa = ("<b><u>КР</u></b>❗️ " + lesson_name_full) if is_a_summative else lesson_name_full
 
 		# Проверяем, есть ли URL к скачанному уроку. В unique_lesson_id мы создаём строку с уникальным идентификатором урока, который будет использоваться для поиска его в базе данных.
 		unique_lesson_id = f"{lesson['scheduleId']}_{user_data['BilimlandID']}"
@@ -429,7 +432,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 
 			# Получаем index.json
 			index_json_url: Any = await BL.get_lesson_answers_link(
-				lesson_info["data"]["lessonId"]
+				lesson_info["data"]["lessonId"], is_a_summative
 			)
 
 			lesson_downloaded: str = ""
@@ -444,7 +447,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 					lesson_decoded_url = await _BL.decode_url(lesson_downloaded, unique_lesson_id)
 
 					# Проверяем, нету ли ошибки:
-					if "Something went wrong :-(" in lesson_decoded_url:
+					if "Something went wrong" in lesson_decoded_url:
 						raise Exception("Ошибка при получении урока, вероятнее всего, сервер дешифровки ответов упал.")
 					
 					break
@@ -479,7 +482,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 
 		if smaller_version:
 			# Мобильная версия
-			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b> <a href=\"https://onlinemektep.net/schedule/{schedule_date}/lesson/{lesson['scheduleId']}\">{lesson_name_full}</a>: {score}%"
+			lessons_list += f" • {'✅' if score else ' ' * 6} <b>[{index + 1}]</b> <a href=\"https://onlinemektep.net/schedule/{schedule_date}/lesson/{lesson['scheduleId']}\">{lesson_name_with_sa}</a>: {score}%"
 
 			if not broken_url:
 				keys.append(InlineKeyboardButton(

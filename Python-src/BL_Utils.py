@@ -220,9 +220,9 @@ async def get_lesson_info(less_id: str, token: str) -> dict:
 			return await response.json()
 
 
-async def decode_url(file_data: str, lesson_id: str) -> str:
+async def decode_url(file_data: str, lesson_id: str, is_a_summative: bool = False) -> str:
 	url = "https://bilimlandbot.eu.pythonanywhere.com/api/decode"
 
 	async with aiohttp.ClientSession() as session:
-		async with session.post(url, json={"File": file_data, "LessonID": lesson_id}) as response:
+		async with session.post(url, json={"File": file_data, "LessonID": lesson_id, "SA": is_a_summative}) as response:
 			return await response.text()
