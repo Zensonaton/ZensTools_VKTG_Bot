@@ -164,6 +164,7 @@ async def login(username: str, password: str, user_id: int, force_login: bool = 
 				"Token": 			login_result["access_token"],
 				"Refresh-Token": 	login_result["refresh_token"],
 				"Male": 			login_result["user_info"]["gender"] == "m",
+				"BilimlandID":		login_result["user_info"]["userId"],
 				"ID":				user_id,
 				"InlineButtons": 	{}
 			}
