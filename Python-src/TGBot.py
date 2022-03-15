@@ -414,7 +414,12 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 		score = round((score / 10) * 100)
 
 		# Проверяем, СОР/СОЧ ли это:
-		is_a_summative = lesson["type"] != "regular"
+		lesson_type = lesson["type"]
+
+		is_a_summative = lesson_type != "regular"
+		is_a_regular = lesson_type == "regular"
+		is_a_soch = lesson_type == "soch"
+		is_a_sor = lesson_type == "sor"
 
 		lesson_name = smaller_lesson_names.get(
 			lesson['subject']['label'], lesson['subject']['label'])
@@ -432,7 +437,7 @@ async def generate_schedule_string(msg: types.Message, full_schedule: dict, sche
 
 			# Получаем index.json
 			index_json_url: Any = await BL.get_lesson_answers_link(
-				lesson_info["data"]["lessonId"], is_a_summative
+				lesson_info["data"]["lessonId"], is_a_summative, is_a_soch
 			)
 
 			lesson_downloaded: str = ""

@@ -380,8 +380,8 @@ async def get_lesson_access(userData: dict, token: str, lesson_id: int):
 
 			return await response.json()
 
-async def get_lesson_answers_link(lesson_id: int | str, is_a_summative: bool = False):
-	URL = "https://onlinemektep.net/upload/files/sor/q20213/{}/index.json" if is_a_summative else "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
+async def get_lesson_answers_link(lesson_id: int | str, is_a_summative: bool = False, is_a_soch_summative: bool = False):
+	URL = ("https://onlinemektep.net/upload/files/" + ("soch" if is_a_soch_summative else "sor") + "/q20213/{}/index.json") if is_a_summative else "https://onlinemektep.net/upload/online_mektep/lesson/{}/index.json"
 
 	if isinstance(lesson_id, int):
 		lesson_id = f"L_{lesson_id}"
